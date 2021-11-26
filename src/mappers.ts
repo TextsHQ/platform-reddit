@@ -13,17 +13,22 @@ const mapChannelMember = (user): Participant => ({
   username: user.nickname,
 })
 
-const mapMessage = (message: any): Message => ({
-  id: `${message?.message_id}`,
-  timestamp: new Date(message.created_at),
-  text: message.message,
-  senderID: message.user?.user_id,
-  editedTimestamp: message.updated_at > 0 ? new Date(message.updated_at) : undefined,
-})
+export const mapMessage = (message: any, currentUserId: string): Message => {
+  const senderID = message.user?.user_id || message.user?.guest_id
 
-export const mapMessages = (messages: any[]): Message[] => messages.map(mapMessage)
+  return {
+    id: `${message?.message_id || message?.msg_id}`,
+    timestamp: new Date(message.created_at || message.ts),
+    text: message.message,
+    senderID,
+    isSender: currentUserId === senderID,
+    editedTimestamp: message.updated_at > 0 ? new Date(message.updated_at) : undefined,
+  }
+}
 
-const mapThread = (thread: any): Thread => {
+export const mapMessages = (messages: any[], currentUserId: string): Message[] => messages.map(message => mapMessage(message, currentUserId))
+
+const mapThread = (thread: any, currentUserId: string): Thread => {
   const type: ThreadType = (() => {
     if (thread.is_broadcast) return 'broadcast'
     if (thread.channel?.member_count > 2) return 'channel'
@@ -40,8 +45,8 @@ const mapThread = (thread: any): Thread => {
     type,
     timestamp: lastMessage ? new Date(lastMessage.created_at) : new Date(thread.invited_at),
     participants: { items: thread.members.map(mapChannelMember), hasMore: false },
-    messages: { items: [mapMessage(lastMessage)], hasMore: true },
+    messages: { items: [mapMessage(lastMessage, currentUserId)], hasMore: true },
   }
 }
 
-export const mapThreads = (threads: any[]): Thread[] => threads.map(mapThread)
+export const mapThreads = (threads: any[], currentUserId: string): Thread[] => threads.map(thread => mapThread(thread, currentUserId))
