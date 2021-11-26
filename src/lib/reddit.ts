@@ -1,3 +1,4 @@
+import type { Message, MessageContent, OnServerEventCallback } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
 
@@ -5,7 +6,9 @@ import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from
 import Http from './http'
 import RealTime from './real-time'
 
-export const sleep = (timeout: number) => new Promise(resolve => setTimeout(resolve, timeout))
+export const sleep = (timeout: number) => new Promise(resolve => {
+  setTimeout(resolve, timeout)
+})
 
 class RedditAPI {
   cookieJar: CookieJar
@@ -42,13 +45,13 @@ class RedditAPI {
   // FIXME: Use states and types instead of sessionKey to check if
   // connected
   waitUntilWsReady = async () => {
-    while (!this.wsClient.sessionKey) {
+    while (!this.wsClient?.sessionKey) {
       await sleep(500)
     }
   }
 
-  connect = async (userId: string): Promise<void> => {
-    this.wsClient = new RealTime()
+  connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
+    this.wsClient = new RealTime(onEvent)
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
   }
 
@@ -155,6 +158,11 @@ class RedditAPI {
       searchParams: params,
     })
 
+    return res
+  }
+
+  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
+    const res = await this.wsClient.sendMessage(threadID, content)
     return res
   }
 }

@@ -1,4 +1,4 @@
-import type { LoginCreds, LoginResult, Message, Paginated, PaginationArg, PlatformAPI, Thread } from '@textshq/platform-sdk'
+import type { LoginCreds, LoginResult, Message, MessageContent, OnServerEventCallback, Paginated, PaginationArg, PlatformAPI, Thread } from '@textshq/platform-sdk'
 import { CookieJar } from 'tough-cookie'
 
 import { RedditAPI } from './lib'
@@ -8,6 +8,8 @@ export default class Reddit implements PlatformAPI {
   api: RedditAPI = new RedditAPI()
 
   private currentUser: any = null
+
+  private currentUserId: string
 
   init = async (serialized: { cookies: any, apiToken: string }) => {
     const { cookies, apiToken } = serialized || {}
@@ -31,7 +33,7 @@ export default class Reddit implements PlatformAPI {
   afterAuth = async () => {
     const user = await this.api.getCurrentUser()
     this.currentUser = user
-    await this.api.connect(user.id)
+    this.currentUserId = `t2_${user.id}`
   }
 
   serializeSession = () => ({
@@ -43,13 +45,16 @@ export default class Reddit implements PlatformAPI {
 
   getCurrentUser = () => mapCurrentUser(this.currentUser)
 
-  subscribeToEvents = () => null
+  subscribeToEvents = async (onEvent: OnServerEventCallback): Promise<void> => {
+    if (!this.currentUser) this.currentUser = await this.api.getCurrentUser()
+    await this.api.connect(this.currentUser.id, onEvent)
+  }
 
   searchUsers = () => null
 
   getThreads = async (): Promise<Paginated<Thread>> => {
     const res = await this.api.getThreads()
-    const items = mapThreads(res?.channels || [])
+    const items = mapThreads(res?.channels || [], this.currentUserId)
 
     return { items, hasMore: false }
   }
@@ -58,10 +63,14 @@ export default class Reddit implements PlatformAPI {
     const { cursor } = pagination || { cursor: null }
 
     const res = await this.api.getMessages(threadID, cursor)
-    const mappedCurrentUser = mapCurrentUser(this.currentUser)
-    const items = mapMessages(res?.messages || []).map(message => ({ ...message, isSender: mappedCurrentUser.id === message.senderID }))
+    const items = mapMessages(res?.messages || [], this.currentUserId)
 
     return { items, hasMore: items?.length > 0 }
+  }
+
+  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
+    const res = await this.api.sendMessage(threadID, content)
+    return res
   }
 
   createThread = () => null
