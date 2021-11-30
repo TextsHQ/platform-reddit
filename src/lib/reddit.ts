@@ -139,9 +139,9 @@ class RedditAPI {
   getMessages = async (threadID: string, cursor: any): Promise<any> => {
     const params = {
       is_sdk: 'true',
-      prev_limit: 40,
-      next_limit: 40,
-      include: 'false',
+      prev_limit: 200,
+      next_limit: 200,
+      include: 'true',
       reverse: 'false',
       message_ts: cursor || new Date().getTime(),
       custom_types: '*',
