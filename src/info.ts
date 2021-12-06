@@ -1,4 +1,4 @@
-import { PlatformInfo, MessageDeletionMode } from '@textshq/platform-sdk'
+import { PlatformInfo, MessageDeletionMode, Attribute } from '@textshq/platform-sdk'
 
 const icon = `
   <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg" height="1em" width="1em">
@@ -17,8 +17,10 @@ const info: PlatformInfo = {
     loginURL: 'https://reddit.com/login',
     authCookieName: 'reddit_session',
   },
-  deletionMode: MessageDeletionMode.UNSUPPORTED,
-  attributes: new Set([]),
+  deletionMode: MessageDeletionMode.DELETE_FOR_EVERYONE,
+  attributes: new Set([
+    Attribute.SUPPORTS_DELETE_THREAD,
+  ]),
 }
 
 export default info
