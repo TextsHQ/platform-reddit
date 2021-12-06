@@ -50,7 +50,10 @@ export default class Reddit implements PlatformAPI {
     await this.api.connect(this.currentUser.id, onEvent)
   }
 
-  searchUsers = () => null
+  searchUsers = async (typed: string) => {
+    const res = await this.api.searchUsers(typed)
+    return res
+  }
 
   getThreads = async (): Promise<Paginated<Thread>> => {
     const res = await this.api.getThreads()
@@ -73,9 +76,21 @@ export default class Reddit implements PlatformAPI {
     return res
   }
 
-  createThread = () => null
+  createThread = async (userIDs: string[], title: string) => {
+    const res = await this.api.createThread(userIDs, title)
+    return res
+  }
 
   sendActivityIndicator = () => null
 
   sendReadReceipt = () => null
+
+  deleteThread = async (threadID: string) => {
+    await this.api.deleteThread(threadID)
+  }
+
+  deleteMessage = async (threadID: string, messageID: string) => {
+    await this.api.deleteMessage(threadID, messageID)
+    return true
+  }
 }

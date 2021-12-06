@@ -1,6 +1,7 @@
-import type { Message, MessageContent, OnServerEventCallback } from '@textshq/platform-sdk'
+import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
+import { mapChannelMember, mapThread } from '../mappers'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
 import Http from './http'
@@ -25,6 +26,8 @@ class RedditAPI {
 
   sendbirdUserId: string
 
+  currentUser: Record<string, string>
+
   init = async ({ apiToken = '', cookieJar }: { cookieJar: CookieJar, apiToken?: string }) => {
     this.cookieJar = cookieJar
     this.clientVendorUUID = uuid()
@@ -40,6 +43,7 @@ class RedditAPI {
 
     const user = await this.getCurrentUser()
     this.sendbirdUserId = `t2_${user?.id}`
+    this.currentUser = user
   }
 
   // FIXME: Use states and types instead of sessionKey to check if
@@ -164,6 +168,82 @@ class RedditAPI {
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
     const res = await this.wsClient.sendMessage(threadID, content)
     return res
+  }
+
+  searchUsers = async (typed: string): Promise<User[]> => {
+    // https://oauth.reddit.com/api/subreddit_autocomplete_v2.json?query=user&raw_json=1&gilding_detail=1
+    const params = {
+      query: typed,
+      raw_json: 1,
+      gilding_detail: 1,
+      include_profiles: 1,
+      limit: 10,
+    }
+
+    const headers = {
+      'User-Agent': WEB_USERAGENT,
+      Authorization: `Bearer ${this.apiToken}`,
+    }
+
+    const url = `${RedditURLs.API_OAUTH}/api/subreddit_autocomplete_v2.json`
+
+    const res = await this.http.get(url, { searchParams: params, headers })
+    let data = (res?.data?.children || []).filter(result => result?.kind === 't2')
+    // This is because for some reason there are some cases where the search doesn't work
+    // (for example if we search 'kishanb' for some reason it doesn't show any result)
+    if (!data.length) {
+      // Example: https://oauth.reddit.com/user/asdasd/about?raw_json=1&gilding_detail=1
+      const aboutUrl = `${RedditURLs.API_OAUTH}/user/${typed}/about`
+      const aboutRes = await this.http.get(aboutUrl, { searchParams: { raw_json: 1, gilding_detail: 1 }, headers }).catch(() => ({}))
+      data = [aboutRes]
+    }
+
+    return data.map(({ data: userData }) => mapChannelMember(userData))
+  }
+
+  createThread = async (userIDs: string[], title: string): Promise<Thread> => {
+    const users = [
+      { user_id: this.sendbirdUserId, nickname: this.currentUser.nickname || this.currentUser.name },
+      ...userIDs.map(id => ({ user_id: id })),
+    ]
+
+    const headers = {
+      'User-Agent': WEB_USERAGENT,
+      Authorization: `Bearer ${this.apiToken}`,
+    }
+
+    const data = JSON.stringify({ users, name: title || 'New Group' })
+
+    const url = `${RedditURLs.API_S}/api/v1/sendbird/group_channels`
+    const res = await this.http.post(url, { body: data, headers })
+
+    return mapThread(res, this.sendbirdUserId)
+  }
+
+  deleteThread = async (threadID: string) => {
+    try {
+      const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}`
+      await this.http.base(url, {
+        headers: { 'Session-Key': this.wsClient.sessionKey },
+        method: 'DELETE',
+      })
+    } catch (error) {
+      const body = JSON.stringify({ user_id: this.sendbirdUserId })
+      const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/leave`
+      await this.http.base(url, {
+        headers: { 'Session-Key': this.wsClient.sessionKey },
+        method: 'PUT',
+        body,
+      })
+    }
+  }
+
+  deleteMessage = async (threadID: string, messageID: string) => {
+    const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages/${messageID}`
+    await this.http.base(url, {
+      headers: { 'Session-Key': this.wsClient.sessionKey },
+      method: 'DELETE',
+    })
   }
 }
 

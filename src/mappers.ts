@@ -9,10 +9,12 @@ export const mapCurrentUser = (user: MeResult): CurrentUser => ({
   imgURL: user.icon_img,
 })
 
-const mapChannelMember = (user): Participant => ({
-  id: user.user_id,
-  nickname: user.nickname,
-  username: user.nickname,
+const getSendbirdId = (userId: string): string => (userId?.startsWith('t2_') ? userId : `t2_${userId}`)
+
+export const mapChannelMember = (user): Participant => ({
+  id: getSendbirdId(user.user_id || user.id),
+  nickname: user.nickname || user.name,
+  username: user.nickname || user.name,
 })
 
 const mapSnoomoji = (data: any): MessageAttachment[] => ([{
@@ -42,6 +44,8 @@ const mapV1Attachments = (data: any): MessageAttachment[] => {
 }
 
 export const mapMessage = (message: any, currentUserId: string): Message => {
+  if (!message) return
+
   const senderID = message.user?.user_id || message.user?.guest_id
   const data = JSON.parse(message.data || '{}')
 
@@ -59,7 +63,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
 
 export const mapMessages = (messages: any[], currentUserId: string): Message[] => messages.map(message => mapMessage(message, currentUserId))
 
-const mapThread = (thread: any, currentUserId: string): Thread => {
+export const mapThread = (thread: any, currentUserId: string): Thread => {
   const type: ThreadType = (() => {
     if (thread.is_broadcast) return 'broadcast'
     if (thread.channel?.member_count > 2) return 'channel'
@@ -80,7 +84,10 @@ const mapThread = (thread: any, currentUserId: string): Thread => {
       items: thread.members.map(mapChannelMember).filter(participant => participant.id !== currentUserId),
       hasMore: false,
     },
-    messages: { items: [mapMessage(lastMessage, currentUserId)], hasMore: true },
+    messages: {
+      items: [mapMessage(lastMessage, currentUserId)].filter(Boolean),
+      hasMore: true,
+    },
   }
 }
 
