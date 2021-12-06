@@ -49,6 +49,23 @@ class Http {
 
     return body as ResponseType
   }
+
+  async base<ResponseType = any>(
+    url: string,
+    config: FetchOptions = {},
+  ) {
+    const res = await this.http.requestAsString(url, {
+      cookieJar: this.cookieJar,
+      ...config,
+    })
+
+    const body = JSON.parse(res.body || '{}')
+    const isError = this.isStatusCodeError(res.statusCode) || body?.error
+
+    if (isError) throw { ...body.error }
+
+    return body as ResponseType
+  }
 }
 
 export default Http
