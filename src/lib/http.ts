@@ -43,7 +43,7 @@ class Http {
     })
 
     const body = JSON.parse(res.body || '{}')
-    const isError = this.isStatusCodeError(res.statusCode) || body?.error
+    const isError = this.isStatusCodeError(res.statusCode) || body?.error || body?.errors?.length
 
     if (isError) throw { ...body.error }
 
@@ -65,6 +65,15 @@ class Http {
     if (isError) throw { ...body.error }
 
     return body as ResponseType
+  }
+
+  async requestAsString(url: string, config: FetchOptions = {}) {
+    const res = await this.http.requestAsString(url, {
+      cookieJar: this.cookieJar,
+      ...config,
+    })
+
+    return res
   }
 }
 
