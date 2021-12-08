@@ -1,4 +1,5 @@
 import type { LoginCreds, LoginResult, Message, MessageContent, OnServerEventCallback, Paginated, PaginationArg, PlatformAPI, Thread } from '@textshq/platform-sdk'
+import { ActivityType } from '@textshq/platform-sdk'
 import { CookieJar } from 'tough-cookie'
 
 import { RedditAPI } from './lib'
@@ -81,7 +82,9 @@ export default class Reddit implements PlatformAPI {
     return res
   }
 
-  sendActivityIndicator = () => null
+  sendActivityIndicator = async (type: ActivityType, threadID: string) => {
+    if (type === ActivityType.TYPING) await this.api.sendTyping(threadID)
+  }
 
   sendReadReceipt = () => null
 
