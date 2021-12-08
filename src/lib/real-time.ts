@@ -1,10 +1,13 @@
 import { Message, MessageContent, OnServerEventCallback, ServerEventType } from '@textshq/platform-sdk/'
 import WebSocket from 'ws'
+
+import type Store from './store'
+import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from './constants'
 import { mapMessage } from '../mappers'
 
-import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from './constants'
-
 class RealTime {
+  store: Store
+
   private ws?: WebSocket
 
   sessionKey: string
@@ -17,8 +20,9 @@ class RealTime {
 
   sendMessageResolvers = new Map<string, Function>()
 
-  constructor(onEvent: OnServerEventCallback) {
+  constructor(onEvent: OnServerEventCallback, store: Store) {
     this.onEvent = onEvent
+    this.store = store
   }
 
   getWsUrl = (userId: string, apiToken: string): string => {
@@ -70,7 +74,7 @@ class RealTime {
     const type = message.data.slice(0, 4)
     // TODO: Use types
     if (type === 'LOGI') this.handleLOGIEvent(data)
-    if (type === 'MESG') this.handleMESGEvent(data)
+    if (type === 'MESG' || type === 'MEDI') this.handleMESGEvent(data)
   }
 
   handleLOGIEvent = (data: Record<string, any>) => {
@@ -78,10 +82,13 @@ class RealTime {
   }
 
   handleMESGEvent = (data: Record<string, any>) => {
-    const resolve = this.sendMessageResolvers.get(data?.request_id)
+    const messageData = JSON.parse(data?.data || '{}')
+    const resolve = this.sendMessageResolvers.get(data?.request_id) || this.store.getPromise(messageData?.v1?.clientMessageId)
 
     if (resolve) {
       this.sendMessageResolvers.delete(data?.request_id)
+      this.store.deletePromise(messageData?.v1?.clientMessageId)
+
       resolve([mapMessage(data, this.userId)])
       return true
     }
@@ -96,15 +103,23 @@ class RealTime {
   }
 
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
+    if (!content.text) return []
     // Example: MESG{"channel_url":"sendbird_group_channel_16439928_db598c59987a33d2a179c445bee680c803b52097","message":"testing","data":"{\\"v1\\":{\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[],\\"message_body\\":\\"testing\\"}}","mention_type":"users","req_id":"1637935556054"}\n
     const payload = `MESG{"channel_url":"${threadID}","message":"${content.text}","data":"{\\"v1\\":{\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[],\\"message_body\\":\\"${content.text}\\"}}","mention_type":"users","req_id":"${this.reqId}"}\n`
-    this.ws.send(payload, err => console.log('ERRORRRRR', err))
+    this.ws.send(payload)
+
     const promise = new Promise<any>(resolve => {
       this.sendMessageResolvers.set(`${this.reqId}`, resolve)
     })
 
     this.reqId += 1
     return promise
+  }
+
+  sendTyping = async (threadID: string) => {
+    const time = new Date().getTime()
+    const payload = `TPST{{"channel_url":"${threadID}","time":${time},"req_id":""}}\n`
+    this.ws.send(payload)
   }
 }
 
