@@ -1,17 +1,22 @@
 import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
-import { mapChannelMember, mapThread } from '../mappers'
+import FormData from 'form-data'
+import fs from 'fs/promises'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
+import { mapChannelMember, mapThread } from '../mappers'
 import Http from './http'
 import RealTime from './real-time'
+import Store from './store'
 
 export const sleep = (timeout: number) => new Promise(resolve => {
   setTimeout(resolve, timeout)
 })
 
 class RedditAPI {
+  store = new Store()
+
   cookieJar: CookieJar
 
   http: Http
@@ -27,6 +32,8 @@ class RedditAPI {
   sendbirdUserId: string
 
   currentUser: Record<string, string>
+
+  redditSession: Record<string, string> = {}
 
   init = async ({ apiToken = '', cookieJar }: { cookieJar: CookieJar, apiToken?: string }) => {
     this.cookieJar = cookieJar
@@ -44,7 +51,42 @@ class RedditAPI {
     const user = await this.getCurrentUser()
     this.sendbirdUserId = `t2_${user?.id}`
     this.currentUser = user
+
+    await this.saveRedditSession()
   }
+
+  saveRedditSession = async () => {
+    const { body } = await this.http.requestAsString(RedditURLs.HOME)
+    const endPart = body.split('<script id="data">').pop()
+    let contentScript = endPart.split('</script>').shift()
+    const start = contentScript.indexOf('{')
+    contentScript = contentScript.substring(start, contentScript.length - 1)
+    const dataContent = JSON.parse(contentScript)
+
+    const { loid, version, loidCreated, blob } = dataContent.user.loid
+
+    this.redditSession = {
+      session: dataContent.user.sessionTracker,
+      loid: `${loid}.${version}.${loidCreated}.${blob}`,
+    }
+  }
+
+  getRedditHeaders = () => ({
+    accept: '*/*',
+    'accept-language': 'es-ES,es;q=0.9,en;q=0.8',
+    authorization: `Bearer ${this.apiToken}`,
+    'content-type': 'application/json',
+    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"macOS"',
+    'sec-fetch-dest': 'empty',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-site': 'same-site',
+    'x-reddit-loid': this.redditSession.loid,
+    'x-reddit-session': this.redditSession.session,
+    Referer: 'https://www.reddit.com/',
+    'Referrer-Policy': 'origin-when-cross-origin',
+  })
 
   // FIXME: Use states and types instead of sessionKey to check if
   // connected
@@ -55,7 +97,7 @@ class RedditAPI {
   }
 
   connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
-    this.wsClient = new RealTime(onEvent)
+    this.wsClient = new RealTime(onEvent, this.store)
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
   }
 
@@ -165,9 +207,80 @@ class RedditAPI {
     return res
   }
 
+  sendMedia = async (clientMessageId: string, threadID: string, content: MessageContent): Promise<void> => {
+    const data = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
+
+    const headers = this.getRedditHeaders()
+
+    const [, id] = threadID.split('channel_')
+
+    const messagePetitionRes = await this.http.post(RedditURLs.API_GRAPHQL, {
+      searchParams: { request_timestamp: new Date().getTime() },
+      body: `{\"id\":\"b0bb6207e12d\",\"variables\":{\"input\":{\"channelId\":\"${id}\",\"messageData\":\"{\\\"v1\\\":{\\\"clientMessageId\\\":\\\"${clientMessageId}\\\",\\\"highlights\\\":[],\\\"is_hidden\\\":true,\\\"image\\\":{}}}\",\"message\":\"blob:https://www.reddit.com/f6841d09-dcdf-4c4e-8f0b-56e1885daaf8\",\"messageType\":\"IMAGE\"}}}`,
+      headers,
+    })
+
+    const res = await this.http.post(RedditURLs.API_GRAPHQL, {
+      searchParams: { request_timestamp: new Date().getTime() },
+      body: '{"id":"df597bfa6e5f","variables":{"input":{"mimetype":"PNG"}}}',
+      headers,
+    })
+
+    const { createMediaUploadLease } = res?.data || {}
+    const { uploadLeaseUrl, uploadLeaseHeaders } = createMediaUploadLease.uploadLease
+
+    const form = new FormData()
+
+    for (const currentHeader of uploadLeaseHeaders) {
+      form.append(currentHeader.header, currentHeader.value)
+    }
+
+    form.append('file', data)
+
+    await this.http.http.requestAsString(uploadLeaseUrl, {
+      method: 'POST',
+      cookieJar: this.http.cookieJar,
+      body: form,
+      headers: {
+        accept: '*/*',
+        'accept-language': 'es-ES,es;q=0.9,en;q=0.8',
+        'content-type': `multipart/form-data; boundary=${form.getBoundary()}`,
+        'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'cross-site',
+        Referer: 'https://www.reddit.com/',
+        'Referrer-Policy': 'origin-when-cross-origin',
+      },
+    })
+
+    const { mediaId } = createMediaUploadLease
+    const { messageRedditId } = messagePetitionRes.data?.createChatMessage?.message || {}
+
+    await this.http.post(RedditURLs.API_GRAPHQL, {
+      searchParams: { request_timestamp: new Date().getTime() },
+      body: `{\"id\":\"6a1841b659af\",\"variables\":{\"input\":{\"mediaId\":\"${mediaId}\",\"redditId\":\"${messageRedditId}\"}}}`,
+      headers,
+    })
+  }
+
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
     const res = await this.wsClient.sendMessage(threadID, content)
-    return res
+    let mediaPromise = new Promise(resolve => { resolve([]) })
+
+    if (content.fileName) {
+      const clientMessageId = uuid()
+      mediaPromise = new Promise(resolve => {
+        this.sendMedia(clientMessageId, threadID, content)
+        this.store.savePromise(clientMessageId, resolve)
+      })
+    }
+
+    const messages = await Promise.all([res, mediaPromise])
+
+    return messages.flatMap(data => data) as Message[]
   }
 
   searchUsers = async (typed: string): Promise<User[]> => {
@@ -244,6 +357,10 @@ class RedditAPI {
       headers: { 'Session-Key': this.wsClient.sessionKey },
       method: 'DELETE',
     })
+  }
+
+  sendTyping = async (threadID: string) => {
+    await this.wsClient.sendTyping(threadID)
   }
 }
 
