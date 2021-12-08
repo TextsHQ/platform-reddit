@@ -11,6 +11,7 @@ const info: PlatformInfo = {
   name: 'reddit',
   version: '0.0.1',
   displayName: 'Reddit',
+  typingDurationMs: 3000,
   icon,
   loginMode: 'browser',
   browserLogin: {
