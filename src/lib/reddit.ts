@@ -189,7 +189,7 @@ class RedditAPI {
       next_limit: 200,
       include: 'true',
       reverse: 'false',
-      message_ts: cursor || new Date().getTime(),
+      message_ts: cursor || Date.now(),
       custom_types: '*',
       with_sorted_meta_array: 'false',
       include_reactions: 'false',
@@ -215,13 +215,13 @@ class RedditAPI {
     const [, id] = threadID.split('channel_')
 
     const messagePetitionRes = await this.http.post(RedditURLs.API_GRAPHQL, {
-      searchParams: { request_timestamp: new Date().getTime() },
+      searchParams: { request_timestamp: Date.now() },
       body: `{\"id\":\"b0bb6207e12d\",\"variables\":{\"input\":{\"channelId\":\"${id}\",\"messageData\":\"{\\\"v1\\\":{\\\"clientMessageId\\\":\\\"${clientMessageId}\\\",\\\"highlights\\\":[],\\\"is_hidden\\\":true,\\\"image\\\":{}}}\",\"message\":\"blob:https://www.reddit.com/f6841d09-dcdf-4c4e-8f0b-56e1885daaf8\",\"messageType\":\"IMAGE\"}}}`,
       headers,
     })
 
     const res = await this.http.post(RedditURLs.API_GRAPHQL, {
-      searchParams: { request_timestamp: new Date().getTime() },
+      searchParams: { request_timestamp: Date.now() },
       body: '{"id":"df597bfa6e5f","variables":{"input":{"mimetype":"PNG"}}}',
       headers,
     })
@@ -260,7 +260,7 @@ class RedditAPI {
     const { messageRedditId } = messagePetitionRes.data?.createChatMessage?.message || {}
 
     await this.http.post(RedditURLs.API_GRAPHQL, {
-      searchParams: { request_timestamp: new Date().getTime() },
+      searchParams: { request_timestamp: Date.now() },
       body: `{\"id\":\"6a1841b659af\",\"variables\":{\"input\":{\"mediaId\":\"${mediaId}\",\"redditId\":\"${messageRedditId}\"}}}`,
       headers,
     })

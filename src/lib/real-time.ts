@@ -13,7 +13,7 @@ class RealTime {
 
   sessionKey: string
 
-  reqId: number = new Date().getTime()
+  reqId: number = Date.now()
 
   onEvent: OnServerEventCallback
 
@@ -69,7 +69,7 @@ class RealTime {
   }
 
   heartbeat = () => {
-    const payload = `PING{id: ${new Date().getTime()}, active: 1, req_id: ""}\n`
+    const payload = `PING{id: ${Date.now()}, active: 1, req_id: ""}\n`
     this.ws.ping(payload)
   }
 
@@ -161,7 +161,7 @@ class RealTime {
   }
 
   sendTyping = async (threadID: string) => {
-    const time = new Date().getTime()
+    const time = Date.now()
     const payload = `TPST{{"channel_url":"${threadID}","time":${time},"req_id":""}}\n`
     this.ws.send(payload)
   }
