@@ -1,4 +1,5 @@
-import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity } from '@textshq/platform-sdk'
+import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
+import { RedditURLs } from './lib/constants'
 import type { MeResult } from './lib/types'
 
 export const mapCurrentUser = (user: MeResult): CurrentUser => ({
@@ -19,7 +20,7 @@ export const mapChannelMember = (user): Participant => ({
 
 const mapSnoomoji = (data: any): MessageAttachment[] => ([{
   id: data.clientMessageId,
-  srcURL: `https://www.redditstatic.com/desktop2x/img/snoomoji/${data.snoomoji}.png`,
+  srcURL: `${RedditURLs.SNOOMOJI_STATIC}/${data.snoomoji}.png`,
   size: { width: 50, height: 50 },
   type: MessageAttachmentType.IMG,
 }])
@@ -52,6 +53,31 @@ const mapV1Entities = (data: any): TextEntity[] => {
   return [{ from: 0, to: source?.url?.length, replaceWith: '' }]
 }
 
+type Reaction = {
+  updated_at: number
+  key: string
+  user_ids: string[]
+}
+
+const mapReactions = (data: Reaction[]): MessageReaction[] => {
+  if (!data?.length) return []
+
+  return data.reduce((previous: MessageReaction[], current) => {
+    // key.gif
+    const [key] = current.key.split('.')
+
+    const reactions: MessageReaction[] = current.user_ids.map(userId => ({
+      id: `${userId}${key}`,
+      reactionKey: key,
+      imgURL: `${RedditURLs.API_I}/${current.key}`,
+      participantID: userId,
+      emoji: false,
+    }))
+
+    return [...previous, ...reactions]
+  }, [])
+}
+
 export const mapMessage = (message: any, currentUserId: string): Message => {
   if (!message) return
 
@@ -60,6 +86,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
 
   const attachments = mapV1Attachments(data?.v1 || {})
   const entities = mapV1Entities(data?.v1 || {})
+  const reactions = mapReactions(message?.reactions || []) || undefined
   const isEdited = message.updated_at > 0 && !attachments?.length
 
   return {
@@ -68,6 +95,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
     timestamp: new Date(message.created_at || message.ts),
     text: message.message,
     senderID,
+    reactions,
     isSender: currentUserId === senderID,
     editedTimestamp: isEdited ? new Date(message.updated_at) : undefined,
     attachments: attachments || undefined,
