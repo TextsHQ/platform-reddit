@@ -90,7 +90,6 @@ class RealTime {
       }
     }
 
-    this.ws.on('pong', () => console.log('PONG'))
     this.ws.onmessage = this.onMessage
     this.pingInterval = setInterval(this.heartbeat, 7000)
   }
@@ -146,7 +145,7 @@ class RealTime {
 
       const data = JSON.stringify({
         channel_url: threadID,
-        message: content.text.replace(/\n/g, '\\n'),
+        message: content.text,
         data: JSON.stringify({
           v1: {
             clientMessageId,

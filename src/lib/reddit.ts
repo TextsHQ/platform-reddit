@@ -376,8 +376,6 @@ class RedditAPI {
       },
     }
 
-    console.log({ reactionKey })
-
     await this.http.post(RedditURLs.API_GRAPHQL, {
       searchParams: { request_timestamp: Date.now() },
       body: JSON.stringify(payload),
