@@ -309,7 +309,7 @@ class RedditAPI {
       data = [aboutRes]
     }
 
-    return data.map(({ data: userData }) => mapChannelMember(userData))
+    return data.map(({ data: userData }) => mapChannelMember(userData || {})).filter(Boolean)
   }
 
   createThread = async (userIDs: string[], title: string): Promise<Thread> => {
