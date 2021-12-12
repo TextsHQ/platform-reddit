@@ -1,4 +1,4 @@
-import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType } from '@textshq/platform-sdk'
+import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity } from '@textshq/platform-sdk'
 import type { MeResult } from './lib/types'
 
 export const mapCurrentUser = (user: MeResult): CurrentUser => ({
@@ -43,11 +43,24 @@ const mapV1Attachments = (data: any): MessageAttachment[] => {
   ]
 }
 
+const mapV1Entities = (data: any): TextEntity[] => {
+  if (!data?.image && !data?.gif) return []
+
+  const { image, gif } = data
+  const source = image || gif
+
+  return [{ from: 0, to: source.url.length, replaceWith: '' }]
+}
+
 export const mapMessage = (message: any, currentUserId: string): Message => {
   if (!message) return
 
   const senderID = message.user?.user_id || message.user?.guest_id
   const data = JSON.parse(message.data || '{}')
+
+  const attachments = mapV1Attachments(data?.v1 || {})
+  const entities = mapV1Entities(data?.v1 || {})
+  const isEdited = message.updated_at > 0 && !attachments.length
 
   return {
     _original: JSON.stringify(message),
@@ -56,8 +69,9 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
     text: message.message,
     senderID,
     isSender: currentUserId === senderID,
-    editedTimestamp: message.updated_at > 0 ? new Date(message.updated_at) : undefined,
-    attachments: mapV1Attachments(data?.v1 || {}) || undefined,
+    editedTimestamp: isEdited ? new Date(message.updated_at) : undefined,
+    attachments: attachments || undefined,
+    textAttributes: { entities },
   }
 }
 
