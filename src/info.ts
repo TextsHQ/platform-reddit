@@ -1,4 +1,5 @@
 import { PlatformInfo, MessageDeletionMode, Attribute } from '@textshq/platform-sdk'
+import { supportedReactions } from './lib/constants'
 
 const icon = `
 <svg width="1em" height="1em" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -22,6 +23,11 @@ const info: PlatformInfo = {
   attributes: new Set([
     Attribute.SUPPORTS_DELETE_THREAD,
   ]),
+  reactions: {
+    supported: supportedReactions,
+    canReactWithAllEmojis: false,
+    allowsMultipleReactionsToSingleMessage: true,
+  },
 }
 
 export default info
