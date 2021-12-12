@@ -143,7 +143,23 @@ class RealTime {
 
     const promise = new Promise<any>((resolve, reject) => {
       const clientMessageId = uuid()
-      const payload = `MESG{"channel_url":"${threadID}","message":"${content.text.replace(/\n/g, '\\n')}","data":"{\\"v1\\":{\\"clientMessageId\\":\\"${clientMessageId}\\",\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[]}}","mention_type":"users","req_id":"${this.reqId}"}\n`
+
+      const data = JSON.stringify({
+        channel_url: threadID,
+        message: content.text.replace(/\n/g, '\\n'),
+        data: JSON.stringify({
+          v1: {
+            clientMessageId,
+            preview_collapsed: false,
+            embed_data: {},
+            hidden: false,
+            highlights: [],
+          },
+        }),
+        mention_type: 'users',
+        req_id: this.reqId,
+      })
+      const payload = `MESG${data}\n`
 
       this.ws.send(payload, error => {
         if (error) {
