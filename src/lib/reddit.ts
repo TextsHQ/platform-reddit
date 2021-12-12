@@ -268,7 +268,7 @@ class RedditAPI {
 
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
     const res = await this.wsClient.sendMessage(threadID, content)
-    if (!res?.length) return false
+    if (!res?.length && !content.fileName) return false
 
     let mediaPromise = new Promise(resolve => { resolve([]) })
     if (content.fileName) {

@@ -49,7 +49,7 @@ const mapV1Entities = (data: any): TextEntity[] => {
   const { image, gif } = data
   const source = image || gif
 
-  return [{ from: 0, to: source.url.length, replaceWith: '' }]
+  return [{ from: 0, to: source?.url?.length, replaceWith: '' }]
 }
 
 export const mapMessage = (message: any, currentUserId: string): Message => {
@@ -60,7 +60,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
 
   const attachments = mapV1Attachments(data?.v1 || {})
   const entities = mapV1Entities(data?.v1 || {})
-  const isEdited = message.updated_at > 0 && !attachments.length
+  const isEdited = message.updated_at > 0 && !attachments?.length
 
   return {
     _original: JSON.stringify(message),
