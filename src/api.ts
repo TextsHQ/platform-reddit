@@ -72,7 +72,7 @@ export default class Reddit implements PlatformAPI {
     return { items, hasMore: items?.length > 0 }
   }
 
-  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
+  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
     const res = await this.api.sendMessage(threadID, content)
     return res
   }

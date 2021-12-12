@@ -266,10 +266,11 @@ class RedditAPI {
     })
   }
 
-  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
+  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
     const res = await this.wsClient.sendMessage(threadID, content)
-    let mediaPromise = new Promise(resolve => { resolve([]) })
+    if (!res?.length) return false
 
+    let mediaPromise = new Promise(resolve => { resolve([]) })
     if (content.fileName) {
       const clientMessageId = uuid()
       mediaPromise = new Promise(resolve => {
@@ -279,7 +280,6 @@ class RedditAPI {
     }
 
     const messages = await Promise.all([res, mediaPromise])
-
     return messages.flatMap(data => data) as Message[]
   }
 
