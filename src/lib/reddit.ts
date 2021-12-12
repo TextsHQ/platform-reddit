@@ -209,9 +209,7 @@ class RedditAPI {
 
   sendMedia = async (clientMessageId: string, threadID: string, content: MessageContent): Promise<void> => {
     const data = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
-
     const headers = this.getRedditHeaders()
-
     const [, id] = threadID.split('channel_')
 
     const messagePetitionRes = await this.http.post(RedditURLs.API_GRAPHQL, {
@@ -361,6 +359,52 @@ class RedditAPI {
 
   sendTyping = async (threadID: string) => {
     await this.wsClient.sendTyping(threadID)
+  }
+
+  addReaction = async (threadID: string, messageID: string, reactionKey: string) => {
+    const headers = this.getRedditHeaders()
+    const [, id] = threadID.split('channel_')
+    const payload = {
+      id: '2a0ff72d302a',
+      variables: {
+        input: {
+          channelSendbirdId: id,
+          type: 'ADD',
+          reactionIconKey: reactionKey,
+          messageSendbirdId: messageID,
+        },
+      },
+    }
+
+    console.log({ reactionKey })
+
+    await this.http.post(RedditURLs.API_GRAPHQL, {
+      searchParams: { request_timestamp: Date.now() },
+      body: JSON.stringify(payload),
+      headers,
+    })
+  }
+
+  removeReaction = async (threadID: string, messageID: string, reactionKey: string) => {
+    const headers = this.getRedditHeaders()
+    const [, id] = threadID.split('channel_')
+    const payload = {
+      id: '2a0ff72d302a',
+      variables: {
+        input: {
+          channelSendbirdId: id,
+          type: 'DELETE',
+          messageSendbirdId: messageID,
+          reactionIconKey: reactionKey,
+        },
+      },
+    }
+
+    await this.http.post(RedditURLs.API_GRAPHQL, {
+      searchParams: { request_timestamp: Date.now() },
+      body: JSON.stringify(payload),
+      headers,
+    })
   }
 }
 
