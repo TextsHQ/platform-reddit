@@ -1,6 +1,7 @@
 import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
+
+import type { MeResult, Reaction } from './lib/types'
 import { RedditURLs } from './lib/constants'
-import type { MeResult } from './lib/types'
 
 export const mapCurrentUser = (user: MeResult): CurrentUser => ({
   id: `t2_${user.id}`,
@@ -51,12 +52,6 @@ const mapV1Entities = (data: any): TextEntity[] => {
   const source = image || gif
 
   return [{ from: 0, to: source?.url?.length, replaceWith: '' }]
-}
-
-type Reaction = {
-  updated_at: number
-  key: string
-  user_ids: string[]
 }
 
 const mapReactions = (data: Reaction[]): MessageReaction[] => {

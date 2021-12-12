@@ -137,3 +137,9 @@ type Subreddit = {
   subreddit_type: string
   user_is_subscriber: boolean
 }
+
+export type Reaction = {
+  updated_at: number
+  key: string
+  user_ids: string[]
+}
