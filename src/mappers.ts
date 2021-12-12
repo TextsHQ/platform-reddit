@@ -1,7 +1,7 @@
 import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
 
 import type { MeResult, Reaction } from './lib/types'
-import { RedditURLs } from './lib/constants'
+import { RedditURLs, supportedReactions } from './lib/constants'
 
 export const mapCurrentUser = (user: MeResult): CurrentUser => ({
   id: `t2_${user.id}`,
@@ -58,15 +58,11 @@ const mapReactions = (data: Reaction[]): MessageReaction[] => {
   if (!data?.length) return []
 
   return data.reduce((previous: MessageReaction[], current) => {
-    // key.gif
-    const [key] = current.key.split('.')
-
-    const reactions: MessageReaction[] = current.user_ids.map(userId => ({
-      id: `${userId}${key}`,
-      reactionKey: key,
-      imgURL: `${RedditURLs.API_I}/${current.key}`,
-      participantID: userId,
-      emoji: false,
+    const reactions: MessageReaction[] = current.user_ids.map(participantID => ({
+      id: `${participantID}${current.key}`,
+      reactionKey: current.key,
+      imgURL: supportedReactions[current.key] ? undefined : `${RedditURLs.API_I}/${current.key}`,
+      participantID,
     }))
 
     return [...previous, ...reactions]
