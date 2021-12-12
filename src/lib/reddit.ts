@@ -192,7 +192,7 @@ class RedditAPI {
       message_ts: cursor || Date.now(),
       custom_types: '*',
       with_sorted_meta_array: 'false',
-      include_reactions: 'false',
+      include_reactions: 'true',
       include_thread_info: 'false',
       include_replies: 'false',
       include_parent_message_text: 'false',
