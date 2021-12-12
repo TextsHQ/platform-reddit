@@ -1,4 +1,5 @@
-import { Message, MessageContent, OnServerEventCallback, ServerEventType } from '@textshq/platform-sdk/'
+import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts } from '@textshq/platform-sdk/'
+import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 
 import type Store from './store'
@@ -18,7 +19,13 @@ class RealTime {
 
   userId: string
 
+  url: string
+
   sendMessageResolvers = new Map<string, Function>()
+
+  pingInterval: any
+
+  safeDisconnect: boolean
 
   constructor(onEvent: OnServerEventCallback, store: Store) {
     this.onEvent = onEvent
@@ -45,8 +52,13 @@ class RealTime {
     if (this.ws?.readyState === WebSocket.CONNECTING || this.ws?.readyState === WebSocket.OPEN) return
 
     this.userId = `t2_${userId}`
-    const url = this.getWsUrl(userId, apiToken)
-    this.ws = new WebSocket(url, {
+    this.url = this.getWsUrl(userId, apiToken)
+
+    this.setupClient()
+  }
+
+  setupClient = () => {
+    this.ws = new WebSocket(this.url, {
       headers: {
         'User-Agent': USER_AGENT,
         'Accept-Encoding': 'gzip',
@@ -56,25 +68,48 @@ class RealTime {
     this.setupHandlers()
   }
 
+  heartbeat = () => {
+    const payload = `PING{id: ${new Date().getTime()}, active: 1, req_id: ""}\n`
+    this.ws.ping(payload)
+  }
+
   private setupHandlers = () => {
-    this.ws.on('open', async () => console.log('HELLO CONNECTED'))
+    this.ws.on('open', () => texts.log('WS Client connected'))
 
-    this.ws.on('error', error => console.log('EEERRORRRR', error))
+    this.ws.on('error', error => {
+      texts.log('WS Client error', error)
+    })
 
+    this.ws.onclose = () => {
+      if (this.safeDisconnect) {
+        this.ws.terminate()
+        clearInterval(this.pingInterval)
+      } else {
+        texts.log('WS Client Disconnected, will reconnect')
+        this.setupClient()
+      }
+    }
+
+    this.ws.on('pong', () => console.log('PONG'))
     this.ws.onmessage = this.onMessage
+    this.pingInterval = setInterval(this.heartbeat, 7000)
   }
 
   onMessage = (message: WebSocket.MessageEvent) => {
-    // Structure:
-    // IDEN:data
-    // Example: LOGI{"key":"blablabla"}
-    const dataString = (message.data as string).slice(4)
-    // FIXME: add more cases
-    const data = JSON.parse(dataString)
-    const type = message.data.slice(0, 4)
-    // TODO: Use types
-    if (type === 'LOGI') this.handleLOGIEvent(data)
-    if (type === 'MESG' || type === 'MEDI') this.handleMESGEvent(data)
+    try {
+      // Structure:
+      // IDEN:data
+      // Example: LOGI{"key":"blablabla"}
+      const dataString = (message.data as string).slice(4)
+      // FIXME: add more cases
+      const data = JSON.parse(dataString || '{}')
+      const type = message.data.slice(0, 4)
+      // TODO: Use types
+      if (type === 'LOGI') this.handleLOGIEvent(data)
+      if (type === 'MESG' || type === 'MEDI') this.handleMESGEvent(data)
+    } catch (error) {
+      texts.log('Error handling message', error, { data: message.data })
+    }
   }
 
   handleLOGIEvent = (data: Record<string, any>) => {
@@ -83,7 +118,8 @@ class RealTime {
 
   handleMESGEvent = (data: Record<string, any>) => {
     const messageData = JSON.parse(data?.data || '{}')
-    const resolve = this.sendMessageResolvers.get(data?.request_id) || this.store.getPromise(messageData?.v1?.clientMessageId)
+    const messageId = messageData?.v1?.clientMessageId || '-'
+    const resolve = this.sendMessageResolvers.get(messageId) || this.store.getPromise(messageId)
 
     if (resolve) {
       this.sendMessageResolvers.delete(data?.request_id)
@@ -104,15 +140,23 @@ class RealTime {
 
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[]> => {
     if (!content.text) return []
-    // Example: MESG{"channel_url":"sendbird_group_channel_16439928_db598c59987a33d2a179c445bee680c803b52097","message":"testing","data":"{\\"v1\\":{\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[],\\"message_body\\":\\"testing\\"}}","mention_type":"users","req_id":"1637935556054"}\n
-    const payload = `MESG{"channel_url":"${threadID}","message":"${content.text}","data":"{\\"v1\\":{\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[],\\"message_body\\":\\"${content.text}\\"}}","mention_type":"users","req_id":"${this.reqId}"}\n`
-    this.ws.send(payload)
 
-    const promise = new Promise<any>(resolve => {
-      this.sendMessageResolvers.set(`${this.reqId}`, resolve)
+    const promise = new Promise<any>((resolve, reject) => {
+      const clientMessageId = uuid()
+      const payload = `MESG{"channel_url":"${threadID}","message":"${content.text.replace(/\n/g, '\\n')}","data":"{\\"v1\\":{\\"clientMessageId\\":\\"${clientMessageId}\\",\\"preview_collapsed\\":false,\\"embed_data\\":{},\\"hidden\\":false,\\"highlights\\":[]}}","mention_type":"users","req_id":"${this.reqId}"}\n`
+
+      this.ws.send(payload, error => {
+        if (error) {
+          texts.log('Error sending message', error)
+          return reject(error.message)
+        }
+
+        this.sendMessageResolvers.set(clientMessageId, resolve)
+      })
+
+      this.reqId += 1
     })
 
-    this.reqId += 1
     return promise
   }
 
