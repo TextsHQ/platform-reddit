@@ -66,10 +66,13 @@ export default class Reddit implements PlatformAPI {
   getMessages = async (threadID: string, pagination: PaginationArg): Promise<Paginated<Message>> => {
     const { cursor } = pagination || { cursor: null }
 
-    const res = await this.api.getMessages(threadID, cursor)
+    const res = await this.api.getMessages(threadID, Number(cursor))
     const items = mapMessages(res?.messages || [], this.currentUserId)
 
-    return { items, hasMore: items?.length > 0 }
+    return {
+      items,
+      hasMore: res?.hasMore,
+    }
   }
 
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {

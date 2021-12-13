@@ -1,6 +1,8 @@
 class Store {
   promises = new Map<string, Function>()
 
+  lastMessageCursors = new Map<string, number>()
+
   getPromise = (key: string) => {
     const resolve = this.promises.get(key)
     return resolve
