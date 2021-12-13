@@ -1,14 +1,12 @@
 class Store {
-  promises = new Map<string, Function>()
-
-  lastMessageCursors = new Map<string, number>()
+  private promises = new Map<string, Function>()
 
   getPromise = (key: string) => {
     const resolve = this.promises.get(key)
     return resolve
   }
 
-  savePromise = (key: string, resolve) => {
+  savePromise = (key: string, resolve: Function) => {
     this.promises.set(key, resolve)
   }
 

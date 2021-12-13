@@ -71,7 +71,7 @@ export default class Reddit implements PlatformAPI {
 
     return {
       items,
-      hasMore: res?.hasMore,
+      hasMore: items?.length > 0,
     }
   }
 

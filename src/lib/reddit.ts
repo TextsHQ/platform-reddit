@@ -182,16 +182,14 @@ class RedditAPI {
     return res
   }
 
-  getMessages = async (threadID: string, cursor: number): Promise<any> => {
-    const lastCursor = this.store.lastMessageCursors.get(threadID)
-
+  getMessages = async (threadID: string, cursor = Date.now()): Promise<any> => {
     const params = {
       is_sdk: 'true',
-      prev_limit: 10,
+      prev_limit: 40,
       next_limit: 0,
-      include: 'true',
+      include: 'false',
       reverse: 'false',
-      message_ts: lastCursor || Date.now(),
+      message_ts: cursor,
       custom_types: '*',
       with_sorted_meta_array: 'false',
       include_reactions: 'true',
@@ -206,11 +204,7 @@ class RedditAPI {
       searchParams: params,
     })
 
-    const [lastMessage] = res?.messages || []
-    const newCursor = lastMessage.created_at
-    this.store.lastMessageCursors.set(threadID, newCursor)
-
-    return { messages: res?.messages, hasMore: newCursor !== lastCursor }
+    return res
   }
 
   sendMedia = async (clientMessageId: string, threadID: string, content: MessageContent): Promise<void> => {

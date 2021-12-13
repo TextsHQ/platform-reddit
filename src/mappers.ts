@@ -83,6 +83,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
   return {
     _original: JSON.stringify(message),
     id: `${message?.message_id || message?.msg_id}`,
+    cursor: message.created_at,
     timestamp: new Date(message.created_at || message.ts),
     text: message.message,
     senderID,
@@ -94,7 +95,8 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
   }
 }
 
-export const mapMessages = (messages: any[], currentUserId: string): Message[] => messages.map(message => mapMessage(message, currentUserId))
+export const mapMessages = (messages: any[], currentUserId: string): Message[] =>
+  messages.map(message => mapMessage(message, currentUserId))
 
 export const mapThread = (thread: any, currentUserId: string): Thread => {
   const type: ThreadType = (() => {

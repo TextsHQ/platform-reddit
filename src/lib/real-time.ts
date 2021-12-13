@@ -13,7 +13,7 @@ class RealTime {
 
   sessionKey: string
 
-  reqId: number = Date.now()
+  private reqId = Date.now()
 
   onEvent: OnServerEventCallback
 
@@ -21,7 +21,7 @@ class RealTime {
 
   url: string
 
-  sendMessageResolvers = new Map<string, Function>()
+  private sendMessageResolvers = new Map<string, Function>()
 
   pingInterval: any
 
@@ -108,6 +108,7 @@ class RealTime {
       if (type === 'MESG' || type === 'MEDI') this.handleMESGEvent(data)
     } catch (error) {
       texts.log('Error handling message', error, { data: message.data })
+      texts.Sentry.captureException(error)
     }
   }
 
