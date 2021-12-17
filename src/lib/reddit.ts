@@ -63,22 +63,18 @@ class RedditAPI {
   }
 
   saveRedditSession = async () => {
-    try {
-      const { body } = await this.http.requestAsString(RedditURLs.HOME)
-      const endPart = body.split('<script id="data">').pop()
-      let contentScript = endPart.split('</script>').shift()
-      const start = contentScript.indexOf('{')
-      contentScript = contentScript.substring(start, contentScript.length - 1)
-      const dataContent = JSON.parse(contentScript)
+    const { body } = await this.http.requestAsString(RedditURLs.HOME)
+    const endPart = body.split('<script id="data">').pop()
+    let contentScript = endPart.split('</script>').shift()
+    const start = contentScript.indexOf('{')
+    contentScript = contentScript.substring(start, contentScript.length - 1)
+    const dataContent = JSON.parse(contentScript)
 
-      const { loid, version, loidCreated, blob } = dataContent.user.loid
+    const { loid, version, loidCreated, blob } = dataContent.user.loid
 
-      this.redditSession = {
-        session: dataContent.user.sessionTracker,
-        loid: `${loid}.${version}.${loidCreated}.${blob}`,
-      }
-    } catch (error) {
-      texts.log('Error getting session', error)
+    this.redditSession = {
+      session: dataContent.user.sessionTracker,
+      loid: `${loid}.${version}.${loidCreated}.${blob}`,
     }
   }
 
