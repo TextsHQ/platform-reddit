@@ -35,7 +35,13 @@ class RedditAPI {
 
   redditSession: Record<string, string> = {}
 
-  init = async ({ apiToken = '', cookieJar }: { cookieJar: CookieJar, apiToken?: string }) => {
+  init = async ({
+    apiToken = '',
+    cookieJar,
+  }: {
+    cookieJar: CookieJar
+    apiToken?: string
+  }): Promise<Record<string, any>> => {
     this.cookieJar = cookieJar
     this.clientVendorUUID = uuid()
     this.http = new Http(this.cookieJar)
@@ -53,6 +59,8 @@ class RedditAPI {
     this.currentUser = user
 
     await this.saveRedditSession()
+
+    return user
   }
 
   saveRedditSession = async () => {

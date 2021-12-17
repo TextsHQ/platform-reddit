@@ -17,22 +17,18 @@ export default class Reddit implements PlatformAPI {
     if (!cookies && !apiToken) return
 
     const cookieJar = CookieJar.fromJSON(cookies) || null
-
-    await this.api.init({ apiToken, cookieJar })
-    await this.afterAuth()
+    await this.afterAuth({ apiToken, cookieJar })
   }
 
   login = async ({ cookieJarJSON }: LoginCreds): Promise<LoginResult> => {
     const cookieJar = CookieJar.fromJSON(cookieJarJSON as any)
-
-    await this.api.init({ cookieJar })
-    await this.afterAuth()
+    await this.afterAuth({ cookieJar })
 
     return { type: 'success' }
   }
 
-  afterAuth = async () => {
-    const user = await this.api.getCurrentUser()
+  afterAuth = async ({ cookieJar, apiToken = undefined }: { cookieJar: CookieJar, apiToken?: string }) => {
+    const user = await this.api.init({ cookieJar, apiToken })
     this.currentUser = user
     this.currentUserId = `t2_${user.id}`
   }
