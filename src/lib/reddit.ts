@@ -1,4 +1,4 @@
-import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
+import { Message, MessageContent, OnServerEventCallback, texts, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
 import FormData from 'form-data'
@@ -51,31 +51,34 @@ class RedditAPI {
 
     this.apiToken = redditToken
 
-    const sendbirdToken = await this.getSendbirdToken()
-    this.sendbirdToken = sendbirdToken
+    const promises = [this.getSendbirdToken(), this.getCurrentUser(), this.saveRedditSession()]
+    const res = await Promise.all(promises)
+    const [sendbirdToken, user] = res
 
-    const user = await this.getCurrentUser()
+    this.sendbirdToken = sendbirdToken
     this.sendbirdUserId = `t2_${user?.id}`
     this.currentUser = user
-
-    await this.saveRedditSession()
 
     return user
   }
 
   saveRedditSession = async () => {
-    const { body } = await this.http.requestAsString(RedditURLs.HOME)
-    const endPart = body.split('<script id="data">').pop()
-    let contentScript = endPart.split('</script>').shift()
-    const start = contentScript.indexOf('{')
-    contentScript = contentScript.substring(start, contentScript.length - 1)
-    const dataContent = JSON.parse(contentScript)
+    try {
+      const { body } = await this.http.requestAsString(RedditURLs.HOME)
+      const endPart = body.split('<script id="data">').pop()
+      let contentScript = endPart.split('</script>').shift()
+      const start = contentScript.indexOf('{')
+      contentScript = contentScript.substring(start, contentScript.length - 1)
+      const dataContent = JSON.parse(contentScript)
 
-    const { loid, version, loidCreated, blob } = dataContent.user.loid
+      const { loid, version, loidCreated, blob } = dataContent.user.loid
 
-    this.redditSession = {
-      session: dataContent.user.sessionTracker,
-      loid: `${loid}.${version}.${loidCreated}.${blob}`,
+      this.redditSession = {
+        session: dataContent.user.sessionTracker,
+        loid: `${loid}.${version}.${loidCreated}.${blob}`,
+      }
+    } catch (error) {
+      texts.log('Error getting session', error)
     }
   }
 
