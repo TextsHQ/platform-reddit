@@ -1,4 +1,4 @@
-import { Message, MessageContent, OnServerEventCallback, texts, Thread, User } from '@textshq/platform-sdk'
+import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
 import FormData from 'form-data'
