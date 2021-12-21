@@ -33,6 +33,7 @@ class RealTime {
   }
 
   getWsUrl = (userId: string, apiToken: string): string => {
+    // @see https://github.com/scrubjay55/Reddit_ChatBot_Python/blob/master/Reddit_ChatBot_Python/_utils/consts.py#L1-L11
     const base = 'wss://sendbirdproxyk8s.chat.redditmedia.com'
     const params = {
       user_id: `t2_${userId}`,
