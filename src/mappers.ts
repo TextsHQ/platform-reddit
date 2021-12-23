@@ -73,7 +73,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
   if (!message) return
 
   const senderID = message.user?.user_id || message.user?.guest_id
-  const data = JSON.parse(message.data || '{}')
+  const data = JSON.parse(message.data || 'null')
 
   const attachments = mapV1Attachments(data?.v1 || {})
   const entities = mapV1Entities(data?.v1 || {})

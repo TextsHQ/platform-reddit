@@ -15,25 +15,25 @@ export const sleep = (timeout: number) => new Promise(resolve => {
 })
 
 class RedditAPI {
-  store = new Store()
+  private store = new Store()
 
-  cookieJar: CookieJar
+  private cookieJar: CookieJar
 
   http: Http
 
   apiToken: string
 
-  sendbirdToken: string
+  private sendbirdToken: string
 
-  clientVendorUUID: string
+  private clientVendorUUID: string
 
-  wsClient: RealTime
+  private wsClient: RealTime
 
-  sendbirdUserId: string
+  private sendbirdUserId: string
 
-  currentUser: Record<string, string>
+  private currentUser: Record<string, string>
 
-  redditSession: Record<string, string> = {}
+  private redditSession: Record<string, string> = {}
 
   init = async ({
     apiToken = '',
@@ -62,25 +62,25 @@ class RedditAPI {
     return user
   }
 
-  saveRedditSession = async () => {
+  private saveRedditSession = async () => {
     const { body } = await this.http.requestAsString(RedditURLs.HOME)
-    const endPart = body.split('<script id="data">').pop()
-    let contentScript = endPart.split('</script>').shift()
-    const start = contentScript.indexOf('{')
-    contentScript = contentScript.substring(start, contentScript.length - 1)
-    const dataContent = JSON.parse(contentScript)
+    if (!body.includes('window.___r')) throw Error(`"window.___r" not found in ${RedditURLs.HOME}`)
+
+    const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
+    if (!json) throw Error('regex match for json failed')
+
+    const dataContent = JSON.parse(json)
 
     const { loid, version, loidCreated, blob } = dataContent.user.loid
-
     this.redditSession = {
       session: dataContent.user.sessionTracker,
       loid: `${loid}.${version}.${loidCreated}.${blob}`,
     }
   }
 
-  getRedditHeaders = () => ({
+  private getRedditHeaders = () => ({
     accept: '*/*',
-    'accept-language': 'es-ES,es;q=0.9,en;q=0.8',
+    'accept-language': 'en',
     authorization: `Bearer ${this.apiToken}`,
     'content-type': 'application/json',
     'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
@@ -108,7 +108,7 @@ class RedditAPI {
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
   }
 
-  reauthenticate = async (apiToken: string): Promise<string> => {
+  private reauthenticate = async (apiToken: string): Promise<string> => {
     const headers = {
       'User-Agent': WEB_USERAGENT,
       Authorization: `Bearer ${apiToken}`,
@@ -125,7 +125,7 @@ class RedditAPI {
     return res?.access_token
   }
 
-  getApiToken = async (): Promise<string> => {
+  private getApiToken = async (): Promise<string> => {
     const headers = {
       Authorization: `Basic ${OAUTH_CLIENT_ID_B64}`,
       'User-Agent': MOBILE_USERAGENT,
@@ -142,7 +142,7 @@ class RedditAPI {
     return res?.access_token
   }
 
-  getSendbirdToken = async (): Promise<string> => {
+  private getSendbirdToken = async (): Promise<string> => {
     const headers = {
       'User-Agent': MOBILE_USERAGENT,
       Authorization: `Bearer ${this.apiToken}`,
@@ -248,7 +248,7 @@ class RedditAPI {
       body: form,
       headers: {
         accept: '*/*',
-        'accept-language': 'es-ES,es;q=0.9,en;q=0.8',
+        'accept-language': 'en',
         'content-type': `multipart/form-data; boundary=${form.getBoundary()}`,
         'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
         'sec-ch-ua-mobile': '?0',

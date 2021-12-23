@@ -102,7 +102,7 @@ class RealTime {
       // Example: LOGI{"key":"blablabla"}
       const dataString = (message.data as string).slice(4)
       // FIXME: add more cases
-      const data = JSON.parse(dataString || '{}')
+      const data = JSON.parse(dataString || 'null')
       const type = message.data.slice(0, 4)
       // TODO: Use types
       if (type === 'LOGI') this.handleLOGIEvent(data)
@@ -118,7 +118,7 @@ class RealTime {
   }
 
   handleMESGEvent = (data: Record<string, any>) => {
-    const messageData = JSON.parse(data?.data || '{}')
+    const messageData = JSON.parse(data?.data || 'null')
     const messageId = messageData?.v1?.clientMessageId || '-'
     const resolve = this.sendMessageResolvers.get(messageId) || this.store.getPromise(messageId)
 
