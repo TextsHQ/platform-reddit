@@ -6,7 +6,7 @@ import { RedditAPI } from './lib'
 import { mapCurrentUser, mapMessages, mapThreads } from './mappers'
 
 export default class Reddit implements PlatformAPI {
-  api: RedditAPI = new RedditAPI()
+  private readonly api = new RedditAPI()
 
   private currentUser: any = null
 

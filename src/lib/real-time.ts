@@ -1,4 +1,4 @@
-import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts } from '@textshq/platform-sdk/'
+import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts } from '@textshq/platform-sdk'
 import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 

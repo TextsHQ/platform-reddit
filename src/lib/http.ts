@@ -27,10 +27,14 @@ class Http {
       ...config,
     })
 
-    const body = JSON.parse(res.body || '{}')
+    if (res.body[0] === '<') {
+      console.error('fetch', url, config)
+      throw Error(`Expected JSON, HTML returned for ${url}`)
+    }
+    const body = JSON.parse(res.body || 'null')
     const isError = isStatusCodeError(res.statusCode) || body?.error
 
-    if (isError) throw { ...body.error }
+    if (isError) throw { ...body?.error }
 
     return body as ResponseType
   }
