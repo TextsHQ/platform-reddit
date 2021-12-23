@@ -172,7 +172,8 @@ class RedditAPI {
       show_read_receipt: 'true',
       show_delivery_receipt: 'true',
       show_empty: 'true',
-      member_state_filter: 'joined_only',
+      // In case we want to implement another "Inbox" type we have this filter
+      // member_state_filter: 'joined_only',
       super_mode: 'all',
       public_mode: 'all',
       unread_filter: 'all',
@@ -286,6 +287,10 @@ class RedditAPI {
 
     const messages = await Promise.all([res, mediaPromise])
     return messages.flatMap(data => data) as Message[]
+  }
+
+  sendReadReceipt = async (threadID: string): Promise<void> => {
+    await this.wsClient.sendReadReceipt(threadID)
   }
 
   searchUsers = async (typed: string): Promise<User[]> => {

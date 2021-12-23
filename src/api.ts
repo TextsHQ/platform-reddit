@@ -85,7 +85,9 @@ export default class Reddit implements PlatformAPI {
     if (type === ActivityType.TYPING) await this.api.sendTyping(threadID)
   }
 
-  sendReadReceipt = () => null
+  sendReadReceipt = async (threadID: string) => {
+    await this.api.sendReadReceipt(threadID)
+  }
 
   deleteThread = async (threadID: string) => {
     await this.api.deleteThread(threadID)

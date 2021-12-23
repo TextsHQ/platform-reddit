@@ -107,6 +107,7 @@ class RealTime {
       // TODO: Use types
       if (type === 'LOGI') this.handleLOGIEvent(data)
       if (type === 'MESG' || type === 'MEDI') this.handleMESGEvent(data)
+      if (type === 'READ') this.handleREADEvent(data)
     } catch (error) {
       texts.log('Error handling message', error, { data: message.data })
       texts.Sentry.captureException(error)
@@ -115,6 +116,15 @@ class RealTime {
 
   handleLOGIEvent = (data: Record<string, any>) => {
     this.sessionKey = data.key
+  }
+
+  handleREADEvent = (data: Record<string, any>) => {
+    const resolve = this.sendMessageResolvers.get(data.req_id)
+
+    if (resolve) {
+      this.sendMessageResolvers.delete(data.req_id)
+      resolve()
+    }
   }
 
   handleMESGEvent = (data: Record<string, any>) => {
@@ -179,8 +189,38 @@ class RealTime {
 
   sendTyping = async (threadID: string) => {
     const time = Date.now()
-    const payload = `TPST{{"channel_url":"${threadID}","time":${time},"req_id":""}}\n`
+    const data = JSON.stringify({
+      channel_url: threadID,
+      time,
+      req_id: '',
+    })
+
+    const payload = `TPST${data}\n`
     this.ws.send(payload)
+  }
+
+  sendReadReceipt = async (threadID: string): Promise<void> => {
+    const time = Date.now()
+    const data = JSON.stringify({
+      channel_url: threadID,
+      req_id: `${time}`,
+    })
+
+    const promise = new Promise<any>((resolve, reject) => {
+      this.ws.send(`TPEN${data}\n`)
+      const payload = `READ${data}\n`
+
+      this.ws.send(payload, error => {
+        if (error) {
+          texts.log('Error sending message', error)
+          return reject(error.message)
+        }
+
+        this.sendMessageResolvers.set(`${time}`, resolve)
+      })
+    })
+
+    return promise
   }
 }
 
