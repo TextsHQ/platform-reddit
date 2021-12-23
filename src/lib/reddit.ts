@@ -219,17 +219,40 @@ class RedditAPI {
     const data = content.filePath ? await fs.readFile(content.filePath) : content.fileBuffer
     const headers = this.getRedditHeaders()
     const [, id] = threadID.split('channel_')
+    const [, mimetype] = content.mimeType.split('/')
 
     const messagePetitionRes = await this.http.post(RedditURLs.API_GRAPHQL, {
       searchParams: { request_timestamp: Date.now() },
-      body: `{\"id\":\"b0bb6207e12d\",\"variables\":{\"input\":{\"channelId\":\"${id}\",\"messageData\":\"{\\\"v1\\\":{\\\"clientMessageId\\\":\\\"${clientMessageId}\\\",\\\"highlights\\\":[],\\\"is_hidden\\\":true,\\\"image\\\":{}}}\",\"message\":\"blob:https://www.reddit.com/f6841d09-dcdf-4c4e-8f0b-56e1885daaf8\",\"messageType\":\"IMAGE\"}}}`,
+      body: JSON.stringify({
+        id: 'b0bb6207e12d',
+        variables: {
+          input: {
+            channelId: id,
+            messageData: JSON.stringify({
+              v1: {
+                clientMessageId,
+                highlights: [],
+                is_hidden: true,
+                image: {},
+              },
+            }),
+            message: `blob:https://www.reddit.com/${uuid()}`,
+            messageType: 'IMAGE',
+          },
+        },
+      }),
       headers,
     })
 
     const res = await this.http.post(RedditURLs.API_GRAPHQL, {
       searchParams: { request_timestamp: Date.now() },
-      body: '{"id":"df597bfa6e5f","variables":{"input":{"mimetype":"PNG"}}}',
       headers,
+      body: JSON.stringify({
+        id: 'df597bfa6e5f',
+        variables: {
+          input: { mimetype: mimetype.toUpperCase() },
+        },
+      }),
     })
 
     const { createMediaUploadLease } = res?.data || {}
@@ -267,7 +290,15 @@ class RedditAPI {
 
     await this.http.post(RedditURLs.API_GRAPHQL, {
       searchParams: { request_timestamp: Date.now() },
-      body: `{\"id\":\"6a1841b659af\",\"variables\":{\"input\":{\"mediaId\":\"${mediaId}\",\"redditId\":\"${messageRedditId}\"}}}`,
+      body: JSON.stringify({
+        id: '6a1841b659af',
+        variables: {
+          input: {
+            mediaId,
+            redditId: messageRedditId,
+          },
+        },
+      }),
       headers,
     })
   }
