@@ -70,7 +70,9 @@ class RealTime {
   }
 
   heartbeat = () => {
-    const payload = `PING{id: ${Date.now()}, active: 1, req_id: ""}\n`
+    const time = Date.now()
+    const data = { id: time, active: 1, req_id: '' }
+    const payload = `PING${JSON.stringify(data)}\n`
     this.ws.ping(payload)
   }
 
