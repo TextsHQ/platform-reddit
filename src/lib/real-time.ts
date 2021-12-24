@@ -85,7 +85,9 @@ class RealTime {
 
     this.ws.onclose = () => {
       if (this.safeDisconnect) {
+        texts.log('WS Client safe disconnected')
         this.ws.terminate()
+        this.ws = null
         clearInterval(this.pingInterval)
       } else {
         texts.log('WS Client Disconnected, will reconnect')
@@ -95,6 +97,11 @@ class RealTime {
 
     this.ws.onmessage = this.onMessage
     this.pingInterval = setInterval(this.heartbeat, 7000)
+  }
+
+  dispose = async () => {
+    this.safeDisconnect = true
+    this.ws.close()
   }
 
   onMessage = (message: WebSocket.MessageEvent) => {

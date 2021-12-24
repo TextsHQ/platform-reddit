@@ -108,6 +108,11 @@ class RedditAPI {
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
   }
 
+  dispose = async () => {
+    await this.wsClient.dispose()
+    this.wsClient = null
+  }
+
   private reauthenticate = async (apiToken: string): Promise<string> => {
     const headers = {
       'User-Agent': WEB_USERAGENT,

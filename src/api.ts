@@ -38,7 +38,9 @@ export default class Reddit implements PlatformAPI {
     clientToken: this.api.apiToken,
   })
 
-  dispose = () => null
+  dispose = async () => {
+    this.api.dispose()
+  }
 
   getCurrentUser = () => mapCurrentUser(this.currentUser)
 
