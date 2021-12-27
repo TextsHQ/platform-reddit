@@ -5,10 +5,11 @@ import FormData from 'form-data'
 import fs from 'fs/promises'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
-import { mapChannelMember, mapThread } from '../mappers'
+import { getSendbirdId, mapChannelMember, mapThread } from '../mappers'
 import Http from './http'
 import RealTime from './real-time'
 import Store from './store'
+import type { MeResult, RedditUser } from './types'
 
 export const sleep = (timeout: number) => new Promise(resolve => {
   setTimeout(resolve, timeout)
@@ -31,7 +32,7 @@ class RedditAPI {
 
   private sendbirdUserId: string
 
-  private currentUser: Record<string, string>
+  private currentUser: RedditUser
 
   private redditSession: Record<string, string> = {}
 
@@ -41,7 +42,7 @@ class RedditAPI {
   }: {
     cookieJar: CookieJar
     apiToken?: string
-  }): Promise<Record<string, any>> => {
+  }): Promise<RedditUser> => {
     this.cookieJar = cookieJar
     this.clientVendorUUID = uuid()
     this.http = new Http(this.cookieJar)
@@ -53,10 +54,10 @@ class RedditAPI {
 
     const promises = [this.getSendbirdToken(), this.getCurrentUser(), this.saveRedditSession()]
     const res = await Promise.all(promises)
-    const [sendbirdToken, user] = res
+    const [sendbirdToken, user] = res as [string, RedditUser, void]
 
     this.sendbirdToken = sendbirdToken
-    this.sendbirdUserId = `t2_${user?.id}`
+    this.sendbirdUserId = user.sendbird_id
     this.currentUser = user
 
     return user
@@ -157,14 +158,16 @@ class RedditAPI {
     return res?.sb_access_token
   }
 
-  getCurrentUser = async (): Promise<any> => {
+  getCurrentUser = async (): Promise<RedditUser> => {
     const headers = {
       'User-Agent': WEB_USERAGENT,
       Authorization: `Bearer ${this.apiToken}`,
     }
 
-    const user = await this.http.get(`${RedditURLs.API_OAUTH}/api/v1/me.json`, { cookieJar: this.cookieJar, headers })
-    return user
+    const user: MeResult = await this.http.get(`${RedditURLs.API_OAUTH}/api/v1/me.json`, { cookieJar: this.cookieJar, headers })
+    const sendbirdId = getSendbirdId(user?.id)
+
+    return { ...user, sendbird_id: sendbirdId }
   }
 
   getThreads = async (): Promise<any> => {

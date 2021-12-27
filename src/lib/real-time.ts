@@ -36,7 +36,7 @@ class RealTime {
     // @see https://github.com/scrubjay55/Reddit_ChatBot_Python/blob/master/Reddit_ChatBot_Python/_utils/consts.py#L1-L11
     const base = 'wss://sendbirdproxyk8s.chat.redditmedia.com'
     const params = {
-      user_id: `t2_${userId}`,
+      user_id: userId,
       access_token: apiToken,
       p: 'Android',
       pv: '30',
@@ -52,7 +52,7 @@ class RealTime {
   connect = async ({ userId, apiToken }) => {
     if (this.ws?.readyState === WebSocket.CONNECTING || this.ws?.readyState === WebSocket.OPEN) return
 
-    this.userId = `t2_${userId}`
+    this.userId = userId
     this.url = this.getWsUrl(userId, apiToken)
 
     this.setupClient()

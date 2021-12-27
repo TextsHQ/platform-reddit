@@ -2,15 +2,14 @@ import type { LoginCreds, LoginResult, Message, MessageContent, OnServerEventCal
 import { ActivityType } from '@textshq/platform-sdk'
 import { CookieJar } from 'tough-cookie'
 
+import type { RedditUser } from './lib/types'
 import { RedditAPI } from './lib'
 import { mapCurrentUser, mapMessages, mapThreads } from './mappers'
 
 export default class Reddit implements PlatformAPI {
   private readonly api = new RedditAPI()
 
-  private currentUser: any = null
-
-  private currentUserId: string
+  private currentUser: RedditUser = null
 
   init = async (serialized: { cookies: any, apiToken: string }) => {
     const { cookies, apiToken } = serialized || {}
@@ -30,7 +29,6 @@ export default class Reddit implements PlatformAPI {
   afterAuth = async ({ cookieJar, apiToken = undefined }: { cookieJar: CookieJar, apiToken?: string }) => {
     const user = await this.api.init({ cookieJar, apiToken })
     this.currentUser = user
-    this.currentUserId = `t2_${user.id}`
   }
 
   serializeSession = () => ({
@@ -46,7 +44,7 @@ export default class Reddit implements PlatformAPI {
 
   subscribeToEvents = async (onEvent: OnServerEventCallback): Promise<void> => {
     if (!this.currentUser) this.currentUser = await this.api.getCurrentUser()
-    await this.api.connect(this.currentUser.id, onEvent)
+    await this.api.connect(this.currentUser.sendbird_id, onEvent)
   }
 
   searchUsers = async (typed: string) => {
@@ -56,7 +54,7 @@ export default class Reddit implements PlatformAPI {
 
   getThreads = async (): Promise<Paginated<Thread>> => {
     const res = await this.api.getThreads()
-    const items = mapThreads(res?.channels || [], this.currentUserId)
+    const items = mapThreads(res?.channels || [], this.currentUser.sendbird_id)
 
     return { items, hasMore: false }
   }
@@ -65,7 +63,7 @@ export default class Reddit implements PlatformAPI {
     const { cursor } = pagination || { cursor: null }
 
     const res = await this.api.getMessages(threadID, Number(cursor))
-    const items = mapMessages(res?.messages || [], this.currentUserId)
+    const items = mapMessages(res?.messages || [], this.currentUser.sendbird_id)
 
     return {
       items,

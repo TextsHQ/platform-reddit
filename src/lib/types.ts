@@ -1,5 +1,4 @@
 // @see https://github.com/aelesia/npm-reddit-ts/blob/master/src/types/MeResult.type.ts
-
 export type MeResult = {
   is_employee: boolean
   seen_layout_switch: boolean
@@ -58,6 +57,11 @@ export type MeResult = {
   comment_karma: number
   has_subscribed: boolean
   seen_subreddit_chat_ftux: boolean
+}
+
+export type RedditUser = MeResult & {
+  sendbird_id: string
+  nickname?: string
 }
 
 type Features = {

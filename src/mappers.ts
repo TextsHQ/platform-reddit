@@ -1,17 +1,17 @@
 import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
 
-import type { MeResult, Reaction } from './lib/types'
+import type { Reaction, RedditUser } from './lib/types'
 import { RedditURLs, supportedReactions } from './lib/constants'
 
-export const mapCurrentUser = (user: MeResult): CurrentUser => ({
-  id: `t2_${user.id}`,
+export const mapCurrentUser = (user: RedditUser): CurrentUser => ({
+  id: `${user.sendbird_id || user.id}`,
   displayText: user.name,
   nickname: user.name,
   username: user.name,
   imgURL: user.icon_img,
 })
 
-const getSendbirdId = (userId: string): string => (userId?.startsWith('t2_') ? userId : `t2_${userId}`)
+export const getSendbirdId = (userId: string): string => (userId?.startsWith('t2_') ? userId : `t2_${userId}`)
 
 export const mapChannelMember = (user): Participant => ({
   id: getSendbirdId(user.user_id || user.id),
