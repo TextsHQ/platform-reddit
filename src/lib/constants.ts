@@ -10,6 +10,7 @@ export const SENDBIRD_KEY = '2515BDA8-9D3A-47CF-9325-330BC37ADA13'
 
 export const RedditURLs = {
   HOME: 'https://reddit.com',
+  HOME_SUBREDDIT: 'https://www.reddit.com/r/chile/',
   SNOOMOJI_STATIC: 'https://www.redditstatic.com/desktop2x/img/snoomoji',
   API_I: 'https://i.redd.it',
   API_ACCOUNTS: 'https://accounts.reddit.com',

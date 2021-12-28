@@ -64,8 +64,22 @@ class RedditAPI {
   }
 
   private saveRedditSession = async () => {
-    const { body } = await this.http.requestAsString(RedditURLs.HOME)
-    if (!body.includes('window.___r')) throw Error(`"window.___r" not found in ${RedditURLs.HOME}`)
+    // @see https://github.com/alok-singh/BTC/blob/2d6c1d76297e68ae08dc7ab8e29f21d18d466b49/Scripts/redit/getReditPage.js#L21
+    const headers = {
+      authority: 'www.reddit.com',
+      pragma: 'no-cache',
+      'cache-control': 'no-cache',
+      'upgrade-insecure-requests': '1',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36',
+      'sec-fetch-user': '?1',
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-mode': 'navigate',
+      referer: 'https://www.reddit.com/r/chile/',
+      'accept-language': 'en',
+    }
+    const { body } = await this.http.requestAsString(RedditURLs.HOME_SUBREDDIT, { headers })
+    if (!body.includes('window.___r')) throw Error(`"window.___r" not found in ${RedditURLs.HOME_SUBREDDIT}`)
 
     const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
     if (!json) throw Error('regex match for json failed')
