@@ -10,7 +10,7 @@ const icon = `
 
 const info: PlatformInfo = {
   name: 'reddit',
-  version: '2021.12.23-2',
+  version: '2021.12.23-6',
   displayName: 'Reddit',
   typingDurationMs: 3000,
   icon,
