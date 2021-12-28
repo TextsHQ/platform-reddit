@@ -64,11 +64,8 @@ class RedditAPI {
   }
 
   private saveRedditSession = async () => {
-    const { body } = await this.http.requestAsString(RedditURLs.HOME)
-
-    const [, json] = (body.includes('window.___r')
-      ? /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body)
-      : /r\.setup\((.+?)\);?<\/script>/.exec(body)) || []
+    const { body } = await this.http.requestAsString(RedditURLs.HOME_NEW)
+    const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
     if (!json) throw Error('regex match for json failed')
 
     const dataContent = JSON.parse(json)
@@ -127,7 +124,7 @@ class RedditAPI {
       safe: 'true',
     }
 
-    const url = `${RedditURLs.API_OLD}/refreshproxy`
+    const url = `${RedditURLs.HOME_OLD}/refreshproxy`
     const res = await this.http.post(url, { headers, body: JSON.stringify(data), cookieJar: this.cookieJar })
     return res?.access_token
   }
