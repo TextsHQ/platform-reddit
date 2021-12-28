@@ -65,9 +65,10 @@ class RedditAPI {
 
   private saveRedditSession = async () => {
     const { body } = await this.http.requestAsString(RedditURLs.HOME)
-    if (!body.includes('window.___r')) throw Error(`"window.___r" not found in ${RedditURLs.HOME}`)
 
-    const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
+    const [, json] = (body.includes('window.___r')
+      ? /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body)
+      : /r\.setup\((.+?)\);?<\/script>/.exec(body)) || []
     if (!json) throw Error('regex match for json failed')
 
     const dataContent = JSON.parse(json)
