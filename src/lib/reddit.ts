@@ -8,7 +8,7 @@ import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from
 import { getSendbirdId, mapChannelMember, mapThread } from '../mappers'
 import Http from './http'
 import RealTime from './real-time'
-import Store from './store'
+import PromiseStore from './promise-store'
 import type { MeResult, RedditUser } from './types'
 
 export const sleep = (timeout: number) => new Promise(resolve => {
@@ -16,7 +16,7 @@ export const sleep = (timeout: number) => new Promise(resolve => {
 })
 
 class RedditAPI {
-  private store = new Store()
+  private promiseStore = new PromiseStore()
 
   private cookieJar: CookieJar
 
@@ -103,7 +103,7 @@ class RedditAPI {
   }
 
   connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
-    this.wsClient = new RealTime(onEvent, this.store)
+    this.wsClient = new RealTime(onEvent, this.promiseStore)
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
   }
 
@@ -318,7 +318,7 @@ class RedditAPI {
       const clientMessageId = uuid()
       mediaPromise = new Promise(resolve => {
         this.sendMedia(clientMessageId, threadID, content)
-        this.store.savePromise(clientMessageId, resolve)
+        this.promiseStore.savePromise(clientMessageId, resolve)
       })
     }
 

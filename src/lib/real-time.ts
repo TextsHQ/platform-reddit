@@ -2,12 +2,12 @@ import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts 
 import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 
-import type Store from './store'
+import type PromiseStore from './promise-store'
 import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from './constants'
 import { mapMessage } from '../mappers'
 
 class RealTime {
-  store: Store
+  promiseStore: PromiseStore
 
   private ws?: WebSocket
 
@@ -27,9 +27,9 @@ class RealTime {
 
   safeDisconnect: boolean
 
-  constructor(onEvent: OnServerEventCallback, store: Store) {
+  constructor(onEvent: OnServerEventCallback, store: PromiseStore) {
     this.onEvent = onEvent
-    this.store = store
+    this.promiseStore = store
   }
 
   getWsUrl = (userId: string, apiToken: string): string => {
@@ -139,11 +139,11 @@ class RealTime {
   handleMESGEvent = (data: Record<string, any>) => {
     const messageData = JSON.parse(data?.data || 'null')
     const messageId = messageData?.v1?.clientMessageId || '-'
-    const resolve = this.sendMessageResolvers.get(messageId) || this.store.getPromise(messageId)
+    const resolve = this.sendMessageResolvers.get(messageId) || this.promiseStore.getPromise(messageId)
 
     if (resolve) {
       this.sendMessageResolvers.delete(data?.request_id)
-      this.store.deletePromise(messageData?.v1?.clientMessageId)
+      this.promiseStore.deletePromise(messageData?.v1?.clientMessageId)
 
       resolve([mapMessage(data, this.userId)])
       return true
