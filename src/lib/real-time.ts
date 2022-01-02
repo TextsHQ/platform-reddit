@@ -7,15 +7,11 @@ import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from './constants'
 import { mapMessage } from '../mappers'
 
 class RealTime {
-  promiseStore: PromiseStore
-
   private ws?: WebSocket
 
   sessionKey: string
 
   private reqId = Date.now()
-
-  onEvent: OnServerEventCallback
 
   userId: string
 
@@ -27,10 +23,10 @@ class RealTime {
 
   safeDisconnect: boolean
 
-  constructor(onEvent: OnServerEventCallback, store: PromiseStore) {
-    this.onEvent = onEvent
-    this.promiseStore = store
-  }
+  constructor(
+    readonly onEvent: OnServerEventCallback,
+    readonly promiseStore: PromiseStore,
+  ) {}
 
   getWsUrl = (userId: string, apiToken: string): string => {
     // @see https://github.com/scrubjay55/Reddit_ChatBot_Python/blob/master/Reddit_ChatBot_Python/_utils/consts.py#L1-L11
