@@ -1,4 +1,4 @@
-class Store {
+class PromiseStore {
   private promises = new Map<string, Function>()
 
   getPromise = (key: string) => {
@@ -15,4 +15,4 @@ class Store {
   }
 }
 
-export default Store
+export default PromiseStore
