@@ -5,7 +5,7 @@ import type { Message, MessageContent, OnServerEventCallback, Thread, User } fro
 import type { CookieJar } from 'tough-cookie'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
-import { getSendbirdId, mapChannelMember, mapInboxMessage, mapInboxMessages, mapMessages, mapThread } from '../mappers'
+import { getSendbirdId, mapChannelMember, mapInboxMessages, mapMessages, mapThread } from '../mappers'
 import PromiseStore from './promise-store'
 import RealTime from './real-time'
 import Http from './http'
@@ -459,7 +459,7 @@ class RedditAPI {
     return mapThread(res, this.sendbirdUserId)
   }
 
-  deleteThread = async (threadID: string) => {
+  private deleteSendbirdThread = async (threadID: string) => {
     try {
       const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}`
       await this.http.base(url, {
@@ -477,12 +477,41 @@ class RedditAPI {
     }
   }
 
-  deleteMessage = async (threadID: string, messageID: string) => {
+  deleteThread = async (threadID: string) => {
+    if (threadID.startsWith('sendbird_')) return this.deleteSendbirdThread(threadID)
+
+    return this.deleteInboxMessage(threadID)
+  }
+
+  private deleteSendbirdMessage = async (threadID: string, messageID: string) => {
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages/${messageID}`
     await this.http.base(url, {
       headers: { 'Session-Key': this.wsClient.sessionKey },
       method: 'DELETE',
     })
+  }
+
+  private deleteInboxMessage = async (thingID: string) => {
+    const url = `${RedditURLs.API_OAUTH}/api/del_msg/`
+    const payload = { id: `t4_${thingID}` }
+
+    const headers = {
+      'User-Agent': WEB_USERAGENT,
+      Authorization: `Bearer ${this.apiToken}`,
+    }
+
+    await this.http.post(url, {
+      cookieJar: this.cookieJar,
+      headers,
+      body: JSON.stringify(payload),
+      searchParams: { ...payload },
+    })
+  }
+
+  deleteMessage = async (threadID: string, messageID: string) => {
+    if (threadID.startsWith('sendbird_')) return this.deleteSendbirdMessage(threadID, messageID)
+
+    return this.deleteInboxMessage(messageID)
   }
 
   sendTyping = async (threadID: string) => {
