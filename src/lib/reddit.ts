@@ -5,11 +5,13 @@ import FormData from 'form-data'
 import fs from 'fs/promises'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
-import { getSendbirdId, mapChannelMember, mapThread } from '../mappers'
-import Http from './http'
-import RealTime from './real-time'
+import { getSendbirdId, mapChannelMember, mapInboxMessage, mapInboxMessages, mapMessages, mapThread } from '../mappers'
 import PromiseStore from './promise-store'
+import RealTime from './real-time'
+import Http from './http'
+
 import type { MeResult, RedditUser } from './types'
+import type { InboxChild, InboxResponse, ReplyChild } from './types/inbox'
 
 export const sleep = (timeout: number) => new Promise(resolve => {
   setTimeout(resolve, timeout)
@@ -168,9 +170,7 @@ class RedditAPI {
     return { ...user, sendbird_id: sendbirdId }
   }
 
-  getThreads = async (): Promise<any> => {
-    await this.waitUntilWsReady()
-
+  private getSendbirdThreads = async (): Promise<Record<string, any>[]> => {
     const params = {
       limit: '100',
       order: 'latest_last_message',
@@ -196,7 +196,23 @@ class RedditAPI {
     return res
   }
 
-  getMessages = async (threadID: string, cursor = Date.now()): Promise<any> => {
+  private getInboxThreads = async (): Promise<InboxChild[]> => {
+    const url = `${RedditURLs.HOME}/message/messages.json`
+    const res: InboxResponse = await this.http.get(url)
+
+    return res.data.children
+  }
+
+  getThreads = async (): Promise<{ chat: any, inbox?: InboxChild[] }> => {
+    await this.waitUntilWsReady()
+
+    const sendBirdThreads = await this.getSendbirdThreads()
+    const inboxThreads = await this.getInboxThreads()
+
+    return { chat: sendBirdThreads, inbox: inboxThreads || [] }
+  }
+
+  private getSendbirdThreadMessages = async (threadID: string, cursor: number): Promise<any> => {
     const params = {
       is_sdk: 'true',
       prev_limit: 40,
@@ -219,6 +235,32 @@ class RedditAPI {
     })
 
     return res
+  }
+
+  private getInboxThreadMessages = async (threadID: string, cursor: number): Promise<ReplyChild[]> => {
+    const url = `${RedditURLs.HOME}/message/messages/${threadID}.json`
+    const res: InboxResponse = await this.http.get(url)
+    const [firstChild] = res.data.children || []
+
+    return (
+      typeof firstChild?.data?.replies === 'string'
+        ? []
+        : firstChild?.data?.replies.data.children
+    )
+  }
+
+  getMessages = async (threadID: string, cursor = Date.now()): Promise<Message[]> => {
+    const isSendbirdThread = threadID.startsWith('sendbird_')
+
+    const res = isSendbirdThread
+      ? await this.getSendbirdThreadMessages(threadID, cursor)
+      : await this.getInboxThreadMessages(threadID, cursor)
+
+    const mapped = isSendbirdThread
+      ? mapMessages(res?.messages || [], this.currentUser.sendbird_id)
+      : mapInboxMessages(res, this.currentUser.name)
+
+    return mapped
   }
 
   sendMedia = async (clientMessageId: string, threadID: string, content: MessageContent): Promise<void> => {
@@ -309,7 +351,7 @@ class RedditAPI {
     })
   }
 
-  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
+  private sendSendbirdMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
     const res = await this.wsClient.sendMessage(threadID, content)
     if (!res?.length && !content.fileName) return false
 
@@ -324,6 +366,36 @@ class RedditAPI {
 
     const messages = await Promise.all([res, mediaPromise])
     return messages.flatMap(data => data) as Message[]
+  }
+
+  private sendInboxMessage = async (threadID: string, content: MessageContent): Promise<any> => {
+    const url = `${RedditURLs.API_OAUTH}/api/comment/`
+
+    const headers = {
+      'User-Agent': WEB_USERAGENT,
+      Authorization: `Bearer ${this.apiToken}`,
+    }
+
+    const payload = {
+      api_type: 'json',
+      text: content.text,
+      thing_id: `t4_${threadID}`,
+    }
+
+    const res = await this.http.post(url, {
+      cookieJar: this.cookieJar,
+      headers,
+      searchParams: { ...payload },
+    })
+
+    return !!res
+  }
+
+  sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
+    const isSendbird = threadID.startsWith('sendbird_')
+    if (isSendbird) return this.sendSendbirdMessage(threadID, content)
+
+    return this.sendInboxMessage(threadID, content)
   }
 
   sendReadReceipt = async (threadID: string): Promise<void> => {
@@ -407,6 +479,8 @@ class RedditAPI {
   }
 
   sendTyping = async (threadID: string) => {
+    if (!threadID.startsWith('sendbird_')) return
+
     await this.wsClient.sendTyping(threadID)
   }
 
