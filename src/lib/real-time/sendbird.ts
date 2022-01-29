@@ -2,9 +2,10 @@ import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts 
 import { v4 as uuid } from 'uuid'
 import WebSocket from 'ws'
 
-import type PromiseStore from './promise-store'
-import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from './constants'
-import { mapMessage } from '../mappers'
+import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from '../constants'
+import { mapMessage } from '../../mappers'
+
+import type PromiseStore from '../promise-store'
 
 class RealTime {
   private ws?: WebSocket

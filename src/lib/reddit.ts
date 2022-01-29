@@ -6,8 +6,9 @@ import type { CookieJar } from 'tough-cookie'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
 import { getSendbirdId, mapChannelMember, mapInboxMessages, mapMessages, mapThread } from '../mappers'
+import SendbirdRealTime from './real-time/sendbird'
+import InboxRealTime from './real-time/inbox'
 import PromiseStore from './promise-store'
-import RealTime from './real-time'
 import Http from './http'
 
 import type { MeResult, RedditUser } from './types'
@@ -30,7 +31,9 @@ class RedditAPI {
 
   private clientVendorUUID: string
 
-  private wsClient: RealTime
+  private wsClient: SendbirdRealTime
+
+  private inboxRealtimeClient: InboxRealTime
 
   private sendbirdUserId: string
 
@@ -107,8 +110,11 @@ class RedditAPI {
   }
 
   connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
-    this.wsClient = new RealTime(onEvent, this.promiseStore)
+    this.wsClient = new SendbirdRealTime(onEvent, this.promiseStore)
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
+
+    this.inboxRealtimeClient = new InboxRealTime(onEvent, this.http, this.apiToken)
+    await this.inboxRealtimeClient.connect(this.currentUser.name)
   }
 
   dispose = async () => {
