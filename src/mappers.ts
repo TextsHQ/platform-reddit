@@ -135,14 +135,6 @@ const mapInboxThread = (thread: InboxChild, currentUserId: string): Thread => {
   const { data } = thread
   const { replies } = thread.data
 
-  const participant: Participant = (() => {
-    if (data.author_fullname !== currentUserId) {
-      return { id: data.author, nickname: data.author }
-    }
-
-    return { id: data.dest, nickname: data.dest }
-  })()
-
   const createdAtReplies = typeof replies === 'string' ? [] : replies.data.children.map(child => child.data.created)
   const maxCreatedAt = Math.max(data.created, ...createdAtReplies)
 

@@ -4,7 +4,7 @@ import { CookieJar } from 'tough-cookie'
 
 import type { RedditUser } from './lib/types'
 import { RedditAPI } from './lib'
-import { mapCurrentUser, mapInboxThreads, mapMessages, mapThreads } from './mappers'
+import { mapCurrentUser, mapInboxThreads, mapThreads } from './mappers'
 
 export default class Reddit implements PlatformAPI {
   private readonly api = new RedditAPI()
@@ -59,7 +59,7 @@ export default class Reddit implements PlatformAPI {
 
     const items = [...chatItems, ...inboxItems]
 
-    return { items, hasMore: true }
+    return { items, hasMore: !!res.nextInboxCursor }
   }
 
   getMessages = async (threadID: string, pagination: PaginationArg): Promise<Paginated<Message>> => {
