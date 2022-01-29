@@ -120,6 +120,9 @@ class RedditAPI {
   dispose = async () => {
     await this.wsClient.dispose()
     this.wsClient = null
+
+    this.inboxRealtimeClient.disconnect()
+    this.inboxRealtimeClient = null
   }
 
   private reauthenticate = async (apiToken: string): Promise<string> => {
