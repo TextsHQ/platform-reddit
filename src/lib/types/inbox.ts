@@ -1,3 +1,5 @@
+import type { MeResult } from '.'
+
 export interface InboxResponse {
   kind: string
   data: InboxResponseData
@@ -43,6 +45,7 @@ export interface InboxData {
   created_utc: number
   context: string
   distinguished: null | string
+  participants?: MeResult[]
 }
 
 export interface RepliesClass {
