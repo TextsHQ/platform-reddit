@@ -22,6 +22,7 @@ const info: PlatformInfo = {
   deletionMode: MessageDeletionMode.DELETE_FOR_EVERYONE,
   attributes: new Set([
     Attribute.SUPPORTS_DELETE_THREAD,
+    Attribute.SORT_MESSAGES_ON_PUSH,
   ]),
   reactions: {
     supported: supportedReactions,
