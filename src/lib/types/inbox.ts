@@ -6,8 +6,8 @@ export interface InboxResponse {
 }
 
 export interface InboxResponseData {
-  after: null
-  dist: null
+  after: null | string
+  dist: null | string
   modhash: string
   geo_filter: string
   children: InboxChild[]

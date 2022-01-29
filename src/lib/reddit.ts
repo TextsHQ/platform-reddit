@@ -38,6 +38,8 @@ class RedditAPI {
 
   private redditSession: Record<string, string> = {}
 
+  private lastThreadCursor: string | null
+
   init = async ({
     apiToken = '',
     cookieJar,
@@ -198,7 +200,9 @@ class RedditAPI {
 
   private getInboxThreads = async (): Promise<InboxChild[]> => {
     const url = `${RedditURLs.HOME}/message/messages.json`
-    const res: InboxResponse = await this.http.get(url)
+    const res: InboxResponse = await this.http.get(url, {
+      searchParams: { after: this.lastThreadCursor, limit: 15 },
+    })
 
     for (const thread of res.data.children) {
       const { data } = thread
@@ -212,16 +216,22 @@ class RedditAPI {
       }
     }
 
+    this.lastThreadCursor = res.data.after
+
     return res.data.children
   }
 
-  getThreads = async (): Promise<{ chat: any, inbox?: InboxChild[] }> => {
+  getThreads = async (): Promise<{ chat: any, inbox?: InboxChild[], nextInboxCursor: string | null }> => {
     await this.waitUntilWsReady()
 
     const sendBirdThreads = await this.getSendbirdThreads()
     const inboxThreads = await this.getInboxThreads()
 
-    return { chat: sendBirdThreads, inbox: inboxThreads || [] }
+    return {
+      chat: sendBirdThreads,
+      inbox: inboxThreads || [],
+      nextInboxCursor: this.lastThreadCursor,
+    }
   }
 
   private getSendbirdThreadMessages = async (threadID: string, cursor: number): Promise<any> => {
