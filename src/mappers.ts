@@ -2,6 +2,7 @@ import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachmen
 
 import type { Reaction, RedditUser } from './lib/types'
 import { RedditURLs, supportedReactions } from './lib/constants'
+import type { InboxChild, ReplyChild } from './lib/types/inbox'
 
 export const mapCurrentUser = (user: RedditUser): CurrentUser => ({
   id: `${user.sendbird_id || user.id}`,
@@ -127,3 +128,52 @@ export const mapThread = (thread: any, currentUserId: string): Thread => {
 }
 
 export const mapThreads = (threads: any[], currentUserId: string): Thread[] => threads.map(thread => mapThread(thread, currentUserId))
+
+const mapInboxThread = (thread: InboxChild, currentUserId: string): Thread => {
+  if (thread.kind !== 't4') return null
+
+  const { data } = thread
+  const { replies } = thread.data
+
+  const participant: Participant = (() => {
+    if (data.author_fullname !== currentUserId) {
+      return { id: data.author, nickname: data.author }
+    }
+
+    return { id: data.dest, nickname: data.dest }
+  })()
+
+  const createdAtReplies = typeof replies === 'string' ? [] : replies.data.children.map(child => child.data.created)
+  const maxCreatedAt = Math.max(data.created, ...createdAtReplies)
+
+  return {
+    id: data.id,
+    title: data.subject,
+    isUnread: data.new || false,
+    type: 'single',
+    isReadOnly: !data.author_fullname,
+    timestamp: new Date(maxCreatedAt * 1000),
+    createdAt: new Date(data.created * 1000),
+    description: data.subject,
+    messages: { items: [mapInboxMessage(thread as ReplyChild, currentUserId)], hasMore: true },
+    participants: { items: [participant], hasMore: true },
+  }
+}
+
+export const mapInboxThreads = (threads: InboxChild[], currentUserId: string): Thread[] => threads.map(thread => mapInboxThread(thread, currentUserId))
+
+export const mapInboxMessage = (message: ReplyChild, currentUserId: string): Message => {
+  if (message.kind !== 't4') return null
+
+  const { data } = message
+
+  return {
+    id: data.id,
+    timestamp: new Date(data.created * 1000),
+    senderID: data.author_fullname || data.author,
+    isSender: data.author === currentUserId,
+    text: data.body,
+  }
+}
+
+export const mapInboxMessages = (messages: ReplyChild[], currentUserId: string): Message[] => messages.map(message => mapInboxMessage(message, currentUserId))
