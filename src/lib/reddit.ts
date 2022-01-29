@@ -388,7 +388,14 @@ class RedditAPI {
       searchParams: { ...payload },
     })
 
-    return !!res
+    const hasError = !!(res?.json?.errors?.length)
+    if (hasError) {
+      const [firstError] = res.json.errors
+      const [, message] = firstError
+      throw new Error(message)
+    }
+
+    return !!(res?.json?.data)
   }
 
   sendMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
