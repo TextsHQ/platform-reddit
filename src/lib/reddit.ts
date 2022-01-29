@@ -200,6 +200,18 @@ class RedditAPI {
     const url = `${RedditURLs.HOME}/message/messages.json`
     const res: InboxResponse = await this.http.get(url)
 
+    for (const thread of res.data.children) {
+      const { data } = thread
+
+      const isCurrentUserAuthor = data.author_fullname === this.currentUser.sendbird_id
+      const participantName = isCurrentUserAuthor ? data.dest : data.author_fullname
+      const participant = await this.getRedditUserData(participantName).catch(() => ({ data: null }))
+
+      if (participant?.data) {
+        thread.data.participants = [participant.data]
+      }
+    }
+
     return res.data.children
   }
 
@@ -409,6 +421,19 @@ class RedditAPI {
     await this.wsClient.sendReadReceipt(threadID)
   }
 
+  private getRedditUserData = async (user: string): Promise<{ data: MeResult }> => {
+    const headers = {
+      'User-Agent': WEB_USERAGENT,
+      Authorization: `Bearer ${this.apiToken}`,
+    }
+
+    const url = `${RedditURLs.API_OAUTH}/user/${user}/about`
+    // Example: https://oauth.reddit.com/user/asdasd/about?raw_json=1&gilding_detail=1
+    const res = await this.http.get(url, { searchParams: { raw_json: 1, gilding_detail: 1 }, headers })
+
+    return res
+  }
+
   searchUsers = async (typed: string): Promise<User[]> => {
     // https://oauth.reddit.com/api/subreddit_autocomplete_v2.json?query=user&raw_json=1&gilding_detail=1
     const params = {
@@ -431,9 +456,7 @@ class RedditAPI {
     // This is because for some reason there are some cases where the search doesn't work
     // (for example if we search 'kishanb' for some reason it doesn't show any result)
     if (!data.length) {
-      // Example: https://oauth.reddit.com/user/asdasd/about?raw_json=1&gilding_detail=1
-      const aboutUrl = `${RedditURLs.API_OAUTH}/user/${typed}/about`
-      const aboutRes = await this.http.get(aboutUrl, { searchParams: { raw_json: 1, gilding_detail: 1 }, headers }).catch(() => ({}))
+      const aboutRes = await this.getRedditUserData(typed).catch(() => ({}))
       data = [aboutRes]
     }
 

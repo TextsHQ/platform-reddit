@@ -156,7 +156,7 @@ const mapInboxThread = (thread: InboxChild, currentUserId: string): Thread => {
     createdAt: new Date(data.created * 1000),
     description: data.subject,
     messages: { items: [mapInboxMessage(thread as ReplyChild, currentUserId)], hasMore: true },
-    participants: { items: [participant], hasMore: true },
+    participants: { items: data.participants?.map(mapChannelMember) || [], hasMore: true },
   }
 }
 
