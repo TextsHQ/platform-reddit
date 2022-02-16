@@ -43,13 +43,10 @@ class RedditAPI {
 
   private lastThreadCursor: string | null
 
-  init = async ({
-    apiToken = '',
-    cookieJar,
-  }: {
-    cookieJar: CookieJar
-    apiToken?: string
-  }): Promise<RedditUser> => {
+  private showInbox: boolean
+
+  init = async ({ apiToken = '', cookieJar, showInbox = false }: { cookieJar: CookieJar, apiToken?: string, showInbox?: boolean }): Promise<RedditUser> => {
+    this.showInbox = showInbox
     this.cookieJar = cookieJar
     this.clientVendorUUID = uuid()
     this.http = new Http(this.cookieJar)
@@ -113,16 +110,20 @@ class RedditAPI {
     this.wsClient = new SendbirdRealTime(onEvent, this.promiseStore)
     await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
 
-    this.inboxRealtimeClient = new InboxRealTime(onEvent, this.http, this.apiToken)
-    await this.inboxRealtimeClient.connect(this.currentUser.name)
+    if (this.showInbox) {
+      this.inboxRealtimeClient = new InboxRealTime(onEvent, this.http, this.apiToken)
+      await this.inboxRealtimeClient.connect(this.currentUser.name)
+    }
   }
 
   dispose = async () => {
     await this.wsClient.dispose()
     this.wsClient = null
 
-    this.inboxRealtimeClient.disconnect()
-    this.inboxRealtimeClient = null
+    if (this.showInbox) {
+      this.inboxRealtimeClient.disconnect()
+      this.inboxRealtimeClient = null
+    }
   }
 
   private reauthenticate = async (apiToken: string): Promise<string> => {
@@ -234,7 +235,7 @@ class RedditAPI {
     await this.waitUntilWsReady()
 
     const sendBirdThreads = await this.getSendbirdThreads()
-    const inboxThreads = await this.getInboxThreads()
+    const inboxThreads = this.showInbox ? await this.getInboxThreads() : []
 
     return {
       chat: sendBirdThreads,

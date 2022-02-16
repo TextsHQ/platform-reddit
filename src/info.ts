@@ -29,6 +29,13 @@ const info: PlatformInfo = {
     canReactWithAllEmojis: false,
     allowsMultipleReactionsToSingleMessage: true,
   },
+  prefs: {
+    show_inbox: {
+      label: 'Show inbox',
+      type: 'checkbox',
+      default: false,
+    },
+  },
 }
 
 export default info
