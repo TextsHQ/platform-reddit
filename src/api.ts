@@ -11,9 +11,13 @@ export default class Reddit implements PlatformAPI {
 
   private currentUser: RedditUser = null
 
-  init = async (serialized: { cookies: any, apiToken: string }) => {
+  private showInbox: boolean
+
+  init = async (serialized: { cookies: any, apiToken: string }, _, prefs: Record<string, any>) => {
     const { cookies, apiToken } = serialized || {}
     if (!cookies && !apiToken) return
+
+    this.showInbox = prefs?.show_inbox || false
 
     const cookieJar = CookieJar.fromJSON(cookies) || null
     await this.afterAuth({ apiToken, cookieJar })
@@ -27,7 +31,7 @@ export default class Reddit implements PlatformAPI {
   }
 
   afterAuth = async ({ cookieJar, apiToken = undefined }: { cookieJar: CookieJar, apiToken?: string }) => {
-    const user = await this.api.init({ cookieJar, apiToken })
+    const user = await this.api.init({ cookieJar, apiToken, showInbox: this.showInbox })
     this.currentUser = user
   }
 
