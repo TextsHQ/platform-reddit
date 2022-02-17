@@ -3,6 +3,7 @@ import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachmen
 import type { Reaction, RedditUser } from './lib/types'
 import { RedditURLs, supportedReactions } from './lib/constants'
 import type { InboxChild, ReplyChild } from './lib/types/inbox'
+import { mapTextAttributes } from './text-attributes'
 
 export const mapCurrentUser = (user: RedditUser): CurrentUser => ({
   id: `${user.sendbird_id || user.id}`,
@@ -158,13 +159,15 @@ export const mapInboxMessage = (message: ReplyChild, currentUserId: string): Mes
   if (message.kind !== 't4') return null
 
   const { data } = message
+  const { text, textAttributes } = mapTextAttributes(data.body)
 
   return {
     id: data.id,
     timestamp: new Date(data.created * 1000),
     senderID: data.author_fullname || data.author,
     isSender: data.author === currentUserId,
-    text: data.body,
+    text,
+    textAttributes,
   }
 }
 
