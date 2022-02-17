@@ -36,6 +36,17 @@ const info: PlatformInfo = {
       default: false,
     },
   },
+  attachments: {
+    noSupportForFiles: true,
+    noSupportForAudio: true,
+    maxSize: {
+      // Assuming Reddit has Sendbird's enterprise plan
+      // @see https://help.sendbird.com/s/article/What-s-the-maximum-file-size-I-can-send-from-clients
+      // @see https://www.reddit.com/r/changelog/comments/4kuk2j/reddit_change_introducing_image_uploading_beta/
+      image: 20 * 1024 * 1024,
+      video: 100 * 1024 * 1024,
+    },
+  },
 }
 
 export default info
