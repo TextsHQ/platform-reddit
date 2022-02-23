@@ -245,7 +245,7 @@ __metadata:
   resolution: "@textshq/platform-reddit@workspace:."
   dependencies:
     "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config"
-    "@textshq/platform-sdk": "link:../platform-sdk"
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk"
     "@types/eslint": ^7.28.0
     "@types/tough-cookie": ^4.0.1
     "@types/uuid": ^8.3.3
@@ -259,11 +259,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@textshq/platform-sdk@link:../platform-sdk::locator=%40textshq%2Fplatform-reddit%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@textshq/platform-sdk@link:../platform-sdk::locator=%40textshq%2Fplatform-reddit%40workspace%3A."
+"@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk":
+  version: 0.4.4
+  resolution: "@textshq/platform-sdk@https://github.com/TextsHQ/platform-sdk.git#commit=4f4febf00f0ee5f6940cf2bf7b6684d0d069032e"
+  dependencies:
+    form-data: ^4.0.0
+  checksum: e096ee4c0e6db89b3c89acdbbc70d8b8e113c2ac7f20d7605ae5c49ad7c6ce84926fc5302bbfff42bb8bdf8e573dfcb2728a52959b1bf35939ad8b959236a5ce
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@types/eslint@npm:^7.28.0":
   version: 7.29.0
