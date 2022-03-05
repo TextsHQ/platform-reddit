@@ -1,8 +1,8 @@
-import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
-import type { CookieJar } from 'tough-cookie'
 import { v4 as uuid } from 'uuid'
 import FormData from 'form-data'
-import fs from 'fs/promises'
+import { promises as fs } from 'fs'
+import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
+import type { CookieJar } from 'tough-cookie'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
 import { getSendbirdId, mapChannelMember, mapInboxMessages, mapMessages, mapThread } from '../mappers'
