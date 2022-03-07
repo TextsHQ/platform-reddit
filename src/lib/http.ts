@@ -34,7 +34,7 @@ class Http {
     const body = JSON.parse(res.body || 'null')
     const isError = isStatusCodeError(res.statusCode) || body?.error
 
-    if (isError) throw { ...body?.error }
+    if (isError) throw Error(body?.error?.reason || res.statusCode)
 
     return body as ResponseType
   }
