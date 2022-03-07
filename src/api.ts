@@ -24,6 +24,13 @@ export default class Reddit implements PlatformAPI {
   }
 
   login = async ({ cookieJarJSON }: LoginCreds): Promise<LoginResult> => {
+    if (!cookieJarJSON?.cookies?.some(({ key }) => key === 'reddit_session')) return { type: 'error', errorMessage: 'No authentication cookie was found' }
+
+    // this would throw on a request if the cookie is expired
+    // {
+    //   reason: 'Unauthorized',
+    //   explanation: "{'reason': 'cookie has expired', 'accountId': 't2_ncul7', 'cookieTimeStamp': '2021-12-21 13:27:48 +0000 UTC'}"
+    // }
     const cookieJar = CookieJar.fromJSON(cookieJarJSON as any)
     await this.afterAuth({ cookieJar })
 
