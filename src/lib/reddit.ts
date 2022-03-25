@@ -1,4 +1,4 @@
-import { v4 as uuid } from 'uuid'
+import { randomUUID as uuid } from 'crypto'
 import FormData from 'form-data'
 import { promises as fs } from 'fs'
 import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'

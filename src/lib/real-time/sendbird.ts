@@ -1,5 +1,5 @@
 import { Message, MessageContent, OnServerEventCallback, ServerEventType, texts } from '@textshq/platform-sdk'
-import { v4 as uuid } from 'uuid'
+import { randomUUID as uuid } from 'crypto'
 import WebSocket from 'ws'
 
 import { SENDBIRD_KEY, SENDBIRD_USER_AGENT, USER_AGENT } from '../constants'
