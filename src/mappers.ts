@@ -81,6 +81,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
   const entities = mapV1Entities(data?.v1 || {})
   const reactions = mapReactions(message?.reactions || []) || undefined
   const isEdited = message.updated_at > 0 && !attachments?.length
+  const isAction = !!data?.v1?.action_info_reason
 
   return {
     _original: JSON.stringify(message),
@@ -90,6 +91,7 @@ export const mapMessage = (message: any, currentUserId: string): Message => {
     text: message.message,
     senderID,
     reactions,
+    isAction,
     isSender: currentUserId === senderID,
     editedTimestamp: isEdited ? new Date(message.updated_at) : undefined,
     attachments: attachments || undefined,
