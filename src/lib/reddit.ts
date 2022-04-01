@@ -1,6 +1,7 @@
 import { randomUUID as uuid } from 'crypto'
 import FormData from 'form-data'
 import { promises as fs } from 'fs'
+import { setTimeout as sleep } from 'timers/promises'
 import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 
@@ -13,10 +14,6 @@ import Http from './http'
 
 import type { MeResult, RedditUser } from './types'
 import type { InboxChild, InboxResponse, ReplyChild } from './types/inbox'
-
-export const sleep = (timeout: number) => new Promise(resolve => {
-  setTimeout(resolve, timeout)
-})
 
 class RedditAPI {
   private promiseStore = new PromiseStore()
