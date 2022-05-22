@@ -70,7 +70,7 @@ class RealTime {
     const time = Date.now()
     const data = { id: time, active: 1, req_id: '' }
     const payload = `PING${JSON.stringify(data)}\n`
-    this.ws.ping(payload)
+    this.ws?.ping(payload)
   }
 
   private setupHandlers = () => {
