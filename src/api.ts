@@ -70,7 +70,7 @@ export default class Reddit implements PlatformAPI {
 
     const items = [...chatItems, ...inboxItems]
 
-    return { items, hasMore: !!res.nextInboxCursor }
+    return { items, oldestCursor: res.nextInboxCursor, hasMore: !!res.nextInboxCursor }
   }
 
   getMessages = async (threadID: string, pagination: PaginationArg): Promise<Paginated<Message>> => {
