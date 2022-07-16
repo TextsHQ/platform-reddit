@@ -2,7 +2,7 @@ import { randomUUID as uuid } from 'crypto'
 import FormData from 'form-data'
 import { promises as fs } from 'fs'
 import { setTimeout as sleep } from 'timers/promises'
-import type { Message, MessageContent, OnServerEventCallback, Thread, User } from '@textshq/platform-sdk'
+import { Message, MessageContent, OnServerEventCallback, texts, Thread, User } from '@textshq/platform-sdk'
 import type { CookieJar } from 'tough-cookie'
 
 import { MOBILE_USERAGENT, OAUTH_CLIENT_ID_B64, RedditURLs, WEB_USERAGENT } from './constants'
@@ -558,6 +558,31 @@ class RedditAPI {
     if (!threadID.startsWith('sendbird_')) return
 
     await this.wsClient.sendTyping(threadID)
+  }
+
+  registerPush = async (endpoint: string, p256dh: string, auth: string) => {
+    const headers = this.getRedditHeaders()
+    const payload = {
+      id: '197650c1946c',
+      variables: {
+        pushToken: JSON.stringify({
+          endpoint,
+          expirationTime: null,
+          keys: { p256dh, auth },
+        }),
+        timezoneName: 'Europe/London',
+        timestamp: new Date().toJSON(),
+        language: 'en_us',
+      },
+    }
+    const res = await this.http.post(RedditURLs.API_GRAPHQL, {
+      body: JSON.stringify(payload),
+      headers,
+    })
+    if (!res?.data?.registerWebPushToken?.ok) {
+      texts.log(res)
+      throw Error('could not register push')
+    }
   }
 
   addReaction = async (threadID: string, messageID: string, reactionKey: string) => {

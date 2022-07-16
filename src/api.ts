@@ -1,5 +1,4 @@
-import type { LoginCreds, LoginResult, Message, MessageContent, OnServerEventCallback, Paginated, PaginationArg, PlatformAPI, Thread } from '@textshq/platform-sdk'
-import { ActivityType } from '@textshq/platform-sdk'
+import { ActivityType, LoginCreds, LoginResult, Message, MessageContent, OnServerEventCallback, Paginated, PaginationArg, PlatformAPI, Thread } from '@textshq/platform-sdk'
 import { CookieJar } from 'tough-cookie'
 
 import type { RedditUser } from './lib/types'
@@ -114,4 +113,9 @@ export default class Reddit implements PlatformAPI {
   addReaction = this.api.addReaction
 
   removeReaction = this.api.removeReaction
+
+  registerForPushNotifications = async (type: 'web', token: string) => {
+    const parsed: PushSubscriptionJSON = JSON.parse(token)
+    await this.api.registerPush(parsed.endpoint, parsed.keys.p256dh, parsed.keys.auth)
+  }
 }
