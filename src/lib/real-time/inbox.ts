@@ -33,6 +33,8 @@ class RealTime {
       entries: [mapInboxMessage(message as ReplyChild, this.userId)],
     }))
 
+    if (!events.length) return
+
     this.onEvent(events)
   }
 
