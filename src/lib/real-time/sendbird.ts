@@ -14,15 +14,15 @@ class RealTime {
 
   private reqId = Date.now()
 
-  userId: string
+  private userId: string
 
-  url: string
+  private url: string
 
-  private sendMessageResolvers = new Map<string, Function>()
+  private readonly sendMessageResolvers = new Map<string, Function>()
 
-  pingInterval: any
+  private pingInterval: NodeJS.Timer
 
-  safeDisconnect: boolean
+  private safeDisconnect: boolean
 
   constructor(
     readonly onEvent: OnServerEventCallback,
@@ -93,10 +93,13 @@ class RealTime {
     }
 
     this.ws.onmessage = this.onMessage
+
+    clearInterval(this.pingInterval)
     this.pingInterval = setInterval(this.heartbeat, 7000)
   }
 
   dispose = async () => {
+    clearInterval(this.pingInterval)
     this.safeDisconnect = true
     this.ws.close()
   }

@@ -28,9 +28,9 @@ class RedditAPI {
 
   private clientVendorUUID: string
 
-  private wsClient: SendbirdRealTime
+  private sendbirdRT: SendbirdRealTime
 
-  private inboxRealtimeClient: InboxRealTime
+  private inboxRT: InboxRealTime
 
   private sendbirdUserId: string
 
@@ -98,28 +98,26 @@ class RedditAPI {
   // FIXME: Use states and types instead of sessionKey to check if
   // connected
   waitUntilWsReady = async () => {
-    while (!this.wsClient?.sessionKey) {
+    while (!this.sendbirdRT?.sessionKey) {
       await sleep(500)
     }
   }
 
   connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
-    this.wsClient = new SendbirdRealTime(onEvent, this.promiseStore)
-    await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
+    this.sendbirdRT = new SendbirdRealTime(onEvent, this.promiseStore)
+    await this.sendbirdRT.connect({ userId, apiToken: this.sendbirdToken })
 
     if (this.showInbox) {
-      this.inboxRealtimeClient = new InboxRealTime(onEvent, this.http, this.apiToken)
-      await this.inboxRealtimeClient.connect(this.currentUser.name)
+      this.inboxRT = new InboxRealTime(onEvent, this.http, this.apiToken)
+      await this.inboxRT.connect(this.currentUser.name)
     }
   }
 
   dispose = async () => {
-    await this.wsClient.dispose()
-    this.wsClient = null
+    await this.sendbirdRT.dispose()
 
     if (this.showInbox) {
-      this.inboxRealtimeClient.disconnect()
-      this.inboxRealtimeClient = null
+      this.inboxRT.dispose()
     }
   }
 
@@ -198,7 +196,7 @@ class RedditAPI {
 
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/users/${this.sendbirdUserId}/my_group_channels`
     const res = await this.http.get(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       searchParams: params,
     })
 
@@ -259,7 +257,7 @@ class RedditAPI {
 
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages`
     const res = await this.http.get(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       searchParams: params,
     })
 
@@ -381,7 +379,7 @@ class RedditAPI {
   }
 
   private sendSendbirdMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
-    const res = await this.wsClient.sendMessage(threadID, content)
+    const res = await this.sendbirdRT.sendMessage(threadID, content)
     if (!res?.length && !content.fileName) return false
 
     let mediaPromise = new Promise(resolve => { resolve([]) })
@@ -435,7 +433,7 @@ class RedditAPI {
   }
 
   sendReadReceipt = async (threadID: string): Promise<void> => {
-    await this.wsClient.sendReadReceipt(threadID)
+    await this.sendbirdRT.sendReadReceipt(threadID)
   }
 
   private getRedditUserData = async (user: string): Promise<{ data: MeResult }> => {
@@ -503,14 +501,14 @@ class RedditAPI {
     try {
       const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}`
       await this.http.base(url, {
-        headers: { 'Session-Key': this.wsClient.sessionKey },
+        headers: { 'Session-Key': this.sendbirdRT.sessionKey },
         method: 'DELETE',
       })
     } catch (error) {
       const body = JSON.stringify({ user_id: this.sendbirdUserId })
       const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/leave`
       await this.http.base(url, {
-        headers: { 'Session-Key': this.wsClient.sessionKey },
+        headers: { 'Session-Key': this.sendbirdRT.sessionKey },
         method: 'PUT',
         body,
       })
@@ -526,7 +524,7 @@ class RedditAPI {
   private deleteSendbirdMessage = async (threadID: string, messageID: string) => {
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages/${messageID}`
     await this.http.base(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       method: 'DELETE',
     })
   }
@@ -557,7 +555,7 @@ class RedditAPI {
   sendTyping = async (threadID: string) => {
     if (!threadID.startsWith('sendbird_')) return
 
-    await this.wsClient.sendTyping(threadID)
+    await this.sendbirdRT.sendTyping(threadID)
   }
 
   addReaction = async (threadID: string, messageID: string, reactionKey: string) => {
