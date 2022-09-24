@@ -11,18 +11,18 @@
     "lint": "eslint src --ext ts,tsx,js,jsx --cache"
   },
   "dependencies": {
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk",
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main",
     "form-data": "^4.0.0",
     "tough-cookie": "^4.0.0",
     "ws": "^8.3.0"
   },
   "devDependencies": {
-    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config",
+    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main",
     "@types/eslint": "^7.28.0",
     "@types/tough-cookie": "^4.0.1",
     "@types/ws": "^8.2.0",
-    "eslint": "^7.32.0",
-    "typescript": "^4.6.4"
+    "eslint": "^8.23.1",
+    "typescript": "^4.8.3"
   },
-  "packageManager": "yarn@3.2.1"
+  "packageManager": "yarn@3.2.3"
 }
