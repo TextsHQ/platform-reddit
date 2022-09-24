@@ -108,7 +108,6 @@ export default class Reddit implements PlatformAPI {
 
   deleteMessage = async (threadID: string, messageID: string) => {
     await this.api.deleteMessage(threadID, messageID)
-    return true
   }
 
   addReaction = this.api.addReaction
