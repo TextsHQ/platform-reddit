@@ -1,4 +1,4 @@
-import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, MessageAttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
+import { CurrentUser, Thread, ThreadType, Participant, Message, MessageAttachment, AttachmentType, TextEntity, MessageReaction } from '@textshq/platform-sdk'
 
 import type { Reaction, RedditUser } from './lib/types'
 import { RedditURLs, supportedReactions } from './lib/constants'
@@ -25,7 +25,7 @@ const mapSnoomoji = (data: any): MessageAttachment[] => ([{
   id: data.clientMessageId,
   srcURL: `${RedditURLs.SNOOMOJI_STATIC}/${data.snoomoji}.png`,
   size: { width: 50, height: 50 },
-  type: MessageAttachmentType.IMG,
+  type: AttachmentType.IMG,
 }])
 
 const mapV1Attachments = (data: any): MessageAttachment[] => {
@@ -41,7 +41,7 @@ const mapV1Attachments = (data: any): MessageAttachment[] => {
       id: source.id,
       srcURL: source.url,
       size: { width: source.width, height: source.height },
-      type: MessageAttachmentType.IMG,
+      type: AttachmentType.IMG,
       isGif: Boolean(gif),
     },
   ]
