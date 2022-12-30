@@ -16,7 +16,7 @@ const info: PlatformInfo = {
   icon,
   loginMode: 'browser',
   browserLogin: {
-    loginURL: 'https://reddit.com/login',
+    url: 'https://reddit.com/login',
     authCookieName: 'reddit_session',
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_EVERYONE,
