@@ -11,7 +11,7 @@
     "lint": "eslint src --ext ts,tsx,js,jsx --cache"
   },
   "dependencies": {
-    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#ad5cbc49ffac074860ed49e31bb7d998c20b2ba4",
+    "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#7f6b27bf4cba452902a5b95b7e0925a2de4aaa1b",
     "form-data": "^4.0.0",
     "tough-cookie": "^4.1.2",
     "ws": "^8.3.0"
