@@ -15,6 +15,15 @@ import Http from './http'
 import type { MeResult, RedditUser } from './types'
 import type { InboxChild, InboxResponse, ReplyChild } from './types/inbox'
 
+const secHeaders = {
+  'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="112", "Google Chrome";v="112"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"macOS"',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+}
+
 class RedditAPI {
   private promiseStore = new PromiseStore()
 
@@ -83,12 +92,7 @@ class RedditAPI {
     'accept-language': 'en',
     authorization: `Bearer ${this.apiToken}`,
     'content-type': 'application/json',
-    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-site',
+    ...secHeaders,
     'x-reddit-loid': this.redditSession.loid,
     'x-reddit-session': this.redditSession.session,
     Referer: 'https://www.reddit.com/',
@@ -349,12 +353,7 @@ class RedditAPI {
         accept: '*/*',
         'accept-language': 'en',
         'content-type': `multipart/form-data; boundary=${form.getBoundary()}`,
-        'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'cross-site',
+        ...secHeaders,
         Referer: 'https://www.reddit.com/',
         'Referrer-Policy': 'origin-when-cross-origin',
       },
