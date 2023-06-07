@@ -74,7 +74,22 @@ class RedditAPI {
   }
 
   private saveRedditSession = async () => {
-    const { body } = await this.http.requestAsString(RedditURLs.HOME_NEW)
+    const { body } = await this.http.requestAsString(RedditURLs.HOME_NEW, {
+      headers: {
+        'dnt': '1',
+        'referer': 'https://new.reddit.com/',
+        'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="114"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      }
+    })
+
     const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
     if (!json) throw Error('regex match for json failed')
 
@@ -208,7 +223,7 @@ class RedditAPI {
   }
 
   private getInboxThreads = async (): Promise<InboxChild[]> => {
-    const url = `${RedditURLs.HOME}/message/messages.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/messages.json`
     const res: InboxResponse = await this.http.get(url, {
       searchParams: { after: this.lastThreadCursor, limit: 15 },
     })
@@ -269,7 +284,7 @@ class RedditAPI {
   }
 
   private getInboxThreadMessages = async (threadID: string, cursor: number): Promise<ReplyChild[]> => {
-    const url = `${RedditURLs.HOME}/message/messages/${threadID}.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/messages/${threadID}.json`
     const res: InboxResponse = await this.http.get(url)
     const [firstChild] = res.data.children || []
 
