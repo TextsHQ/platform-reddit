@@ -19,10 +19,10 @@ class RealTime {
   ) {}
 
   checkMessages = async () => {
-    const url = `${RedditURLs.HOME}/message/unread.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/unread.json`
     const res: InboxResponse = await this.http.get(url)
 
-    const newMessages = res.data.children.filter(child => !this.unreadIDs.includes(child.data.name) && !!child.data.parent_id)
+    const newMessages = (res.data || { children: [] }).children.filter(child => !this.unreadIDs.includes(child.data.name) && !!child.data.parent_id)
     this.unreadIDs = [...this.unreadIDs, ...newMessages.map(child => child.data.name)]
 
     const events: ServerEvent[] = newMessages.map(message => ({
@@ -41,10 +41,10 @@ class RealTime {
   connect = async (userId: string) => {
     this.userId = userId
 
-    const url = `${RedditURLs.HOME}/message/unread.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/unread.json`
     const res: InboxResponse = await this.http.get(url)
 
-    const initialIDs = res.data.children.map(child => child.data.name)
+    const initialIDs = (res.data || { children: [] }).children.map(child => child.data.name)
 
     this.unreadIDs = initialIDs
 
