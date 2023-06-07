@@ -3,6 +3,7 @@
 import type { CookieJar } from 'tough-cookie'
 import { FetchOptions, texts } from '@textshq/platform-sdk'
 import { ExpectedJSONGotHTMLError } from '@textshq/platform-sdk/dist/json'
+import { commonHeaders } from './constants'
 
 const isStatusCodeError = (status: number): boolean => status !== 304 && status >= 400
 
@@ -26,6 +27,10 @@ class Http {
     const res = await this.requestAsString(url, {
       cookieJar: this.cookieJar,
       ...config,
+      headers: {
+        ...commonHeaders,
+        ...(config.headers || {}),
+      }
     })
 
     if (res.body[0] === '<') {
