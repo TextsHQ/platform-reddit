@@ -13,16 +13,16 @@
   "dependencies": {
     "@textshq/platform-sdk": "https://github.com/TextsHQ/platform-sdk#main",
     "form-data": "^4.0.0",
-    "tough-cookie": "^4.0.0",
+    "tough-cookie": "^4.1.2",
     "ws": "^8.3.0"
   },
   "devDependencies": {
-    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config",
-    "@types/eslint": "^7.28.0",
+    "@textshq/eslint-config": "https://github.com/TextsHQ/eslint-config#main",
+    "@types/eslint": "^8.4.10",
     "@types/tough-cookie": "^4.0.1",
     "@types/ws": "^8.2.0",
-    "eslint": "^7.32.0",
-    "typescript": "^4.6.4"
+    "eslint": "^8.30.0",
+    "typescript": "^5.0.2"
   },
-  "packageManager": "yarn@3.2.1"
+  "packageManager": "yarn@3.5.0"
 }

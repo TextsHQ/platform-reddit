@@ -2,6 +2,8 @@
 /* eslint-disable no-throw-literal */
 import type { CookieJar } from 'tough-cookie'
 import { FetchOptions, texts } from '@textshq/platform-sdk'
+import { ExpectedJSONGotHTMLError } from '@textshq/platform-sdk/dist/json'
+import { commonHeaders } from './constants'
 
 const isStatusCodeError = (status: number): boolean => status !== 304 && status >= 400
 
@@ -25,11 +27,15 @@ class Http {
     const res = await this.requestAsString(url, {
       cookieJar: this.cookieJar,
       ...config,
+      headers: {
+        ...commonHeaders,
+        ...(config.headers || {}),
+      }
     })
 
     if (res.body[0] === '<') {
-      console.error('fetch', url, config)
-      throw Error(`Expected JSON, HTML returned for ${url}`)
+      console.log(res.statusCode, url, res.body)
+      throw new ExpectedJSONGotHTMLError(res.statusCode, res.body)
     }
     const body = JSON.parse(res.body || 'null')
     const isError = isStatusCodeError(res.statusCode) || body?.error

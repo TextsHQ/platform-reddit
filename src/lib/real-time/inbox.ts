@@ -6,9 +6,9 @@ import { mapInboxMessage } from '../../mappers'
 import { RedditURLs } from '../constants'
 
 class RealTime {
-  interval: any
+  private interval: NodeJS.Timer
 
-  private unreadedIDs: string[] = []
+  private unreadIDs: string[] = []
 
   private userId: string
 
@@ -19,11 +19,11 @@ class RealTime {
   ) {}
 
   checkMessages = async () => {
-    const url = `${RedditURLs.HOME}/message/unread.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/unread.json`
     const res: InboxResponse = await this.http.get(url)
 
-    const newMessages = res.data.children.filter(child => !this.unreadedIDs.includes(child.data.name) && !!child.data.parent_id)
-    this.unreadedIDs = [...this.unreadedIDs, ...newMessages.map(child => child.data.name)]
+    const newMessages = (res.data || { children: [] }).children.filter(child => !this.unreadIDs.includes(child.data.name) && !!child.data.parent_id)
+    this.unreadIDs = [...this.unreadIDs, ...newMessages.map(child => child.data.name)]
 
     const events: ServerEvent[] = newMessages.map(message => ({
       type: ServerEventType.STATE_SYNC,
@@ -33,22 +33,26 @@ class RealTime {
       entries: [mapInboxMessage(message as ReplyChild, this.userId)],
     }))
 
+    if (!events.length) return
+
     this.onEvent(events)
   }
 
   connect = async (userId: string) => {
     this.userId = userId
 
-    const url = `${RedditURLs.HOME}/message/unread.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/unread.json`
     const res: InboxResponse = await this.http.get(url)
 
-    const initialIDs = res.data.children.map(child => child.data.name)
+    const initialIDs = (res.data || { children: [] }).children.map(child => child.data.name)
 
-    this.unreadedIDs = initialIDs
-    this.interval = setInterval(this.checkMessages, 5000)
+    this.unreadIDs = initialIDs
+
+    clearInterval(this.interval)
+    this.interval = setInterval(this.checkMessages, 5_000)
   }
 
-  disconnect = () => {
+  dispose = () => {
     clearInterval(this.interval)
   }
 }

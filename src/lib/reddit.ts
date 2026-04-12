@@ -15,6 +15,15 @@ import Http from './http'
 import type { MeResult, RedditUser } from './types'
 import type { InboxChild, InboxResponse, ReplyChild } from './types/inbox'
 
+const secHeaders = {
+  'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="112", "Google Chrome";v="112"',
+  'sec-ch-ua-mobile': '?0',
+  'sec-ch-ua-platform': '"macOS"',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+}
+
 class RedditAPI {
   private promiseStore = new PromiseStore()
 
@@ -28,9 +37,9 @@ class RedditAPI {
 
   private clientVendorUUID: string
 
-  private wsClient: SendbirdRealTime
+  private sendbirdRT: SendbirdRealTime
 
-  private inboxRealtimeClient: InboxRealTime
+  private inboxRT: InboxRealTime
 
   private sendbirdUserId: string
 
@@ -65,7 +74,22 @@ class RedditAPI {
   }
 
   private saveRedditSession = async () => {
-    const { body } = await this.http.requestAsString(RedditURLs.HOME_NEW)
+    const { body } = await this.http.requestAsString(RedditURLs.HOME_NEW, {
+      headers: {
+        'dnt': '1',
+        'referer': 'https://new.reddit.com/',
+        'Sec-Ch-Ua': '"Not.A/Brand";v="8", "Chromium";v="114"',
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': '"macOS"',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-User': '?1',
+        'Upgrade-Insecure-Requests': '1',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+      }
+    })
+
     const [, json] = /window\.___r\s?=\s?(.+?);?<\/script>/.exec(body) || []
     if (!json) throw Error('regex match for json failed')
 
@@ -83,12 +107,7 @@ class RedditAPI {
     'accept-language': 'en',
     authorization: `Bearer ${this.apiToken}`,
     'content-type': 'application/json',
-    'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
-    'sec-ch-ua-mobile': '?0',
-    'sec-ch-ua-platform': '"macOS"',
-    'sec-fetch-dest': 'empty',
-    'sec-fetch-mode': 'cors',
-    'sec-fetch-site': 'same-site',
+    ...secHeaders,
     'x-reddit-loid': this.redditSession.loid,
     'x-reddit-session': this.redditSession.session,
     Referer: 'https://www.reddit.com/',
@@ -98,28 +117,26 @@ class RedditAPI {
   // FIXME: Use states and types instead of sessionKey to check if
   // connected
   waitUntilWsReady = async () => {
-    while (!this.wsClient?.sessionKey) {
+    while (!this.sendbirdRT?.sessionKey) {
       await sleep(500)
     }
   }
 
   connect = async (userId: string, onEvent: OnServerEventCallback): Promise<void> => {
-    this.wsClient = new SendbirdRealTime(onEvent, this.promiseStore)
-    await this.wsClient.connect({ userId, apiToken: this.sendbirdToken })
+    this.sendbirdRT = new SendbirdRealTime(onEvent, this.promiseStore)
+    await this.sendbirdRT.connect({ userId, apiToken: this.sendbirdToken })
 
     if (this.showInbox) {
-      this.inboxRealtimeClient = new InboxRealTime(onEvent, this.http, this.apiToken)
-      await this.inboxRealtimeClient.connect(this.currentUser.name)
+      this.inboxRT = new InboxRealTime(onEvent, this.http, this.apiToken)
+      await this.inboxRT.connect(this.currentUser.name)
     }
   }
 
   dispose = async () => {
-    await this.wsClient.dispose()
-    this.wsClient = null
+    await this.sendbirdRT.dispose()
 
     if (this.showInbox) {
-      this.inboxRealtimeClient.disconnect()
-      this.inboxRealtimeClient = null
+      this.inboxRT.dispose()
     }
   }
 
@@ -198,7 +215,7 @@ class RedditAPI {
 
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/users/${this.sendbirdUserId}/my_group_channels`
     const res = await this.http.get(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       searchParams: params,
     })
 
@@ -206,7 +223,7 @@ class RedditAPI {
   }
 
   private getInboxThreads = async (): Promise<InboxChild[]> => {
-    const url = `${RedditURLs.HOME}/message/messages.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/messages.json`
     const res: InboxResponse = await this.http.get(url, {
       searchParams: { after: this.lastThreadCursor, limit: 15 },
     })
@@ -259,7 +276,7 @@ class RedditAPI {
 
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages`
     const res = await this.http.get(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       searchParams: params,
     })
 
@@ -267,7 +284,7 @@ class RedditAPI {
   }
 
   private getInboxThreadMessages = async (threadID: string, cursor: number): Promise<ReplyChild[]> => {
-    const url = `${RedditURLs.HOME}/message/messages/${threadID}.json`
+    const url = `${RedditURLs.HOME_WITH_SESSION}/message/messages/${threadID}.json`
     const res: InboxResponse = await this.http.get(url)
     const [firstChild] = res.data.children || []
 
@@ -351,12 +368,7 @@ class RedditAPI {
         accept: '*/*',
         'accept-language': 'en',
         'content-type': `multipart/form-data; boundary=${form.getBoundary()}`,
-        'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="96", "Google Chrome";v="96"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'cross-site',
+        ...secHeaders,
         Referer: 'https://www.reddit.com/',
         'Referrer-Policy': 'origin-when-cross-origin',
       },
@@ -381,7 +393,7 @@ class RedditAPI {
   }
 
   private sendSendbirdMessage = async (threadID: string, content: MessageContent): Promise<Message[] | boolean> => {
-    const res = await this.wsClient.sendMessage(threadID, content)
+    const res = await this.sendbirdRT.sendMessage(threadID, content)
     if (!res?.length && !content.fileName) return false
 
     let mediaPromise = new Promise(resolve => { resolve([]) })
@@ -435,7 +447,7 @@ class RedditAPI {
   }
 
   sendReadReceipt = async (threadID: string): Promise<void> => {
-    await this.wsClient.sendReadReceipt(threadID)
+    await this.sendbirdRT.sendReadReceipt(threadID)
   }
 
   private getRedditUserData = async (user: string): Promise<{ data: MeResult }> => {
@@ -503,14 +515,14 @@ class RedditAPI {
     try {
       const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}`
       await this.http.base(url, {
-        headers: { 'Session-Key': this.wsClient.sessionKey },
+        headers: { 'Session-Key': this.sendbirdRT.sessionKey },
         method: 'DELETE',
       })
     } catch (error) {
       const body = JSON.stringify({ user_id: this.sendbirdUserId })
       const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/leave`
       await this.http.base(url, {
-        headers: { 'Session-Key': this.wsClient.sessionKey },
+        headers: { 'Session-Key': this.sendbirdRT.sessionKey },
         method: 'PUT',
         body,
       })
@@ -526,7 +538,7 @@ class RedditAPI {
   private deleteSendbirdMessage = async (threadID: string, messageID: string) => {
     const url = `${RedditURLs.SENDBIRD_PROXY}/v3/group_channels/${threadID}/messages/${messageID}`
     await this.http.base(url, {
-      headers: { 'Session-Key': this.wsClient.sessionKey },
+      headers: { 'Session-Key': this.sendbirdRT.sessionKey },
       method: 'DELETE',
     })
   }
@@ -557,7 +569,7 @@ class RedditAPI {
   sendTyping = async (threadID: string) => {
     if (!threadID.startsWith('sendbird_')) return
 
-    await this.wsClient.sendTyping(threadID)
+    await this.sendbirdRT.sendTyping(threadID)
   }
 
   registerPush = async (endpoint: string, p256dh: string, auth: string) => {

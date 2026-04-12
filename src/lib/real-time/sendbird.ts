@@ -7,6 +7,8 @@ import { mapMessage } from '../../mappers'
 
 import type PromiseStore from '../promise-store'
 
+const HEARTBEAT_PING_INTERVAL = 7_000
+
 class RealTime {
   private ws?: WebSocket
 
@@ -14,15 +16,15 @@ class RealTime {
 
   private reqId = Date.now()
 
-  userId: string
+  private userId: string
 
-  url: string
+  private url: string
 
-  private sendMessageResolvers = new Map<string, Function>()
+  private readonly sendMessageResolvers = new Map<string, Function>()
 
-  pingInterval: any
+  private pingInterval: NodeJS.Timer
 
-  safeDisconnect: boolean
+  private safeDisconnect: boolean
 
   constructor(
     readonly onEvent: OnServerEventCallback,
@@ -70,7 +72,7 @@ class RealTime {
     const time = Date.now()
     const data = { id: time, active: 1, req_id: '' }
     const payload = `PING${JSON.stringify(data)}\n`
-    this.ws?.ping(payload)
+    if (this.ws?.readyState === this.ws?.OPEN) this.ws?.ping(payload)
   }
 
   private setupHandlers = () => {
@@ -93,10 +95,13 @@ class RealTime {
     }
 
     this.ws.onmessage = this.onMessage
-    this.pingInterval = setInterval(this.heartbeat, 7000)
+
+    clearInterval(this.pingInterval)
+    this.pingInterval = setInterval(this.heartbeat, HEARTBEAT_PING_INTERVAL)
   }
 
   dispose = async () => {
+    clearInterval(this.pingInterval)
     this.safeDisconnect = true
     this.ws.close()
   }

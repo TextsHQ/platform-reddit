@@ -12,6 +12,7 @@ export const RedditURLs = {
   HOME: 'https://reddit.com',
   HOME_OLD: 'https://old.reddit.com',
   HOME_NEW: 'https://new.reddit.com',
+  HOME_WITH_SESSION: 'https://www.reddit.com',
   SNOOMOJI_STATIC: 'https://www.redditstatic.com/desktop2x/img/snoomoji',
   API_I: 'https://i.redd.it',
   API_ACCOUNTS: 'https://accounts.reddit.com',
@@ -19,6 +20,12 @@ export const RedditURLs = {
   API_S: 'https://s.reddit.com',
   API_GRAPHQL: 'https://gql.reddit.com',
   SENDBIRD_PROXY: 'https://sendbirdproxyk8s.chat.redditmedia.com',
+}
+
+export const commonHeaders = {
+  'dnt': '1',
+  'Upgrade-Insecure-Requests': '1',
+  'User-Agent': WEB_USERAGENT,
 }
 
 export const supportedReactions: Record<string, SupportedReaction> = {

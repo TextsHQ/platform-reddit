@@ -10,13 +10,13 @@ const icon = `
 
 const info: PlatformInfo = {
   name: 'reddit',
-  version: '2022.03.01',
+  version: '2023.01.13',
   displayName: 'Reddit',
   typingDurationMs: 3000,
   icon,
   loginMode: 'browser',
   browserLogin: {
-    loginURL: 'https://reddit.com/login',
+    url: 'https://reddit.com/login',
     authCookieName: 'reddit_session',
   },
   deletionMode: MessageDeletionMode.DELETE_FOR_EVERYONE,
