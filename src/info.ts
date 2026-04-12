@@ -36,6 +36,11 @@ const info: PlatformInfo = {
       default: false,
     },
   },
+  notifications: {
+    web: {
+      vapidKey: 'BJ2nJR9HeBwCWe4s7bKfKgWZkx2Q8Q59yBdSVLxWIhPaWuzHDUxQ2YJnhLvbAVujWBZYuQv60V6a6oipSw09FT0',
+    },
+  },
   attachments: {
     noSupportForFiles: true,
     noSupportForAudio: true,
